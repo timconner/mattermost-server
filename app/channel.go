@@ -35,12 +35,9 @@ func (a *App) CreateDefaultChannels(teamId string) ([]*model.Channel, *model.App
 func (a *App) JoinDefaultChannels(teamId string, user *model.User, channelRole string, userRequestorId string) *model.AppError {
 	var err *model.AppError = nil
 
-	var requestor *model.User
 	if userRequestorId != "" {
 		if u := <-a.Srv.Store.User().Get(userRequestorId); u.Err != nil {
 			return u.Err
-		} else {
-			requestor = u.Data.(*model.User)
 		}
 	}
 
@@ -63,27 +60,15 @@ func (a *App) JoinDefaultChannels(teamId string, user *model.User, channelRole s
 			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
 		}
 
-		if *a.Config().ServiceSettings.ExperimentalEnableDefaultChannelLeaveJoinMessages {
-			if requestor == nil {
-				if err := a.postJoinTeamMessage(user, townSquare); err != nil {
-					l4g.Error(utils.T("api.channel.post_user_add_remove_message_and_forget.error"), err)
-				}
-			} else {
-				if err := a.postAddToTeamMessage(requestor, user, townSquare, ""); err != nil {
-					l4g.Error(utils.T("api.channel.post_user_add_remove_message_and_forget.error"), err)
-				}
-			}
-		}
-
 		a.InvalidateCacheForChannelMembers(result.Data.(*model.Channel).Id)
 	}
 
-	if result := <-a.Srv.Store.Channel().GetByName(teamId, "off-topic", true); result.Err != nil {
+	if result := <-a.Srv.Store.Channel().GetByName(teamId, "general", true); result.Err != nil {
 		err = result.Err
-	} else if offTopic := result.Data.(*model.Channel); offTopic.Type == model.CHANNEL_OPEN {
+	} else if general := result.Data.(*model.Channel); general.Type == model.CHANNEL_OPEN {
 
 		cm := &model.ChannelMember{
-			ChannelId:   offTopic.Id,
+			ChannelId:   general.Id,
 			UserId:      user.Id,
 			Roles:       channelRole,
 			NotifyProps: model.GetDefaultChannelNotifyProps(),
@@ -92,18 +77,8 @@ func (a *App) JoinDefaultChannels(teamId string, user *model.User, channelRole s
 		if cmResult := <-a.Srv.Store.Channel().SaveMember(cm); cmResult.Err != nil {
 			err = cmResult.Err
 		}
-		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(user.Id, offTopic.Id, model.GetMillis()); result.Err != nil {
+		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(user.Id, general.Id, model.GetMillis()); result.Err != nil {
 			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
-		}
-
-		if requestor == nil {
-			if err := a.postJoinChannelMessage(user, offTopic); err != nil {
-				l4g.Error(utils.T("api.channel.post_user_add_remove_message_and_forget.error"), err)
-			}
-		} else {
-			if err := a.PostAddToChannelMessage(requestor, user, offTopic, ""); err != nil {
-				l4g.Error(utils.T("api.channel.post_user_add_remove_message_and_forget.error"), err)
-			}
 		}
 
 		a.InvalidateCacheForChannelMembers(result.Data.(*model.Channel).Id)
