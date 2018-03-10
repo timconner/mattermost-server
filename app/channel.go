@@ -36,12 +36,9 @@ func (a *App) CreateDefaultChannels(teamId string) ([]*model.Channel, *model.App
 func (a *App) JoinDefaultChannels(teamId string, user *model.User, shouldBeAdmin bool, userRequestorId string) *model.AppError {
 	var err *model.AppError = nil
 
-	var requestor *model.User
 	if userRequestorId != "" {
 		if u := <-a.Srv.Store.User().Get(userRequestorId); u.Err != nil {
 			return u.Err
-		} else {
-			requestor = u.Data.(*model.User)
 		}
 	}
 
