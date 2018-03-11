@@ -19,32 +19,32 @@ type KickProvider struct {
 }
 
 const (
-	CMD_REMOVE = "remove"
+	//CMD_REMOVE = "remove"
 	CMD_KICK   = "kick"
 )
 
 func init() {
-	RegisterCommandProvider(&RemoveProvider{})
+	//RegisterCommandProvider(&RemoveProvider{})
 	RegisterCommandProvider(&KickProvider{})
 }
 
-func (me *RemoveProvider) GetTrigger() string {
-	return CMD_REMOVE
-}
+//func (me *RemoveProvider) GetTrigger() string {
+//	return CMD_REMOVE
+//}
 
 func (me *KickProvider) GetTrigger() string {
 	return CMD_KICK
 }
 
-func (me *RemoveProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
-	return &model.Command{
-		Trigger:          CMD_REMOVE,
-		AutoComplete:     true,
-		AutoCompleteDesc: T("api.command_remove.desc"),
-		AutoCompleteHint: T("api.command_remove.hint"),
-		DisplayName:      T("api.command_remove.name"),
-	}
-}
+//func (me *RemoveProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
+//	return &model.Command{
+//		Trigger:          CMD_REMOVE,
+//		AutoComplete:     true,
+//		AutoCompleteDesc: T("api.command_remove.desc"),
+//		AutoCompleteHint: T("api.command_remove.hint"),
+//		DisplayName:      T("api.command_remove.name"),
+//	}
+//}
 
 func (me *KickProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Command {
 	return &model.Command{
@@ -56,9 +56,9 @@ func (me *KickProvider) GetCommand(a *App, T goi18n.TranslateFunc) *model.Comman
 	}
 }
 
-func (me *RemoveProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
-	return doCommand(a, args, message)
-}
+//func (me *RemoveProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
+//	return doCommand(a, args, message)
+//}
 
 func (me *KickProvider) DoCommand(a *App, args *model.CommandArgs, message string) *model.CommandResponse {
 	return doCommand(a, args, message)
@@ -70,16 +70,12 @@ func doCommand(a *App, args *model.CommandArgs, message string) *model.CommandRe
 		return &model.CommandResponse{Text: args.T("api.command_channel_rename.channel.app_error"), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 	}
 
-	if channel.Type == model.CHANNEL_OPEN && !a.SessionHasPermissionToChannel(args.Session, args.ChannelId, model.PERMISSION_MANAGE_PUBLIC_CHANNEL_MEMBERS) {
-		return &model.CommandResponse{Text: args.T("api.command_remove.permission.app_error"), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
-	}
-
-	if channel.Type == model.CHANNEL_PRIVATE && !a.SessionHasPermissionToChannel(args.Session, args.ChannelId, model.PERMISSION_MANAGE_PRIVATE_CHANNEL_MEMBERS) {
-		return &model.CommandResponse{Text: args.T("api.command_remove.permission.app_error"), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
-	}
-
 	if channel.Type == model.CHANNEL_GROUP || channel.Type == model.CHANNEL_DIRECT {
 		return &model.CommandResponse{Text: args.T("api.command_remove.direct_group.app_error"), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
+	}
+
+	if !a.SessionHasPermissionToTeam(args.Session, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
+		return &model.CommandResponse{Text: args.T("api.command_remove.permission.app_error"), ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL}
 	}
 
 	if len(message) == 0 {
