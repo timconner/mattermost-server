@@ -132,10 +132,6 @@
     "translation": "无法上传文件。文件太大。"
   },
   {
-    "id": "api.api.init.parsing_templates.debug",
-    "translation": "解析服务模板 %v"
-  },
-  {
     "id": "api.api.init.parsing_templates.error",
     "translation": "解析服务模板出错 %v"
   },
@@ -1373,6 +1369,10 @@
     "translation": "无法上传文件。标题无法被解析。"
   },
   {
+    "id": "api.file.upload_file.incorrect_number_of_files.app_error",
+    "translation": "无法上传文件。指定的文件数不匹配。"
+  },
+  {
     "id": "api.file.upload_file.large_image.app_error",
     "translation": "无法上传超过最大尺寸的文件：{{.Filename}}"
   },
@@ -1817,6 +1817,10 @@
   {
     "id": "api.post.send_notifications_and_forget.push_image_only_dm",
     "translation": " 在私信里上传一个或更多个文件"
+  },
+  {
+    "id": "api.post.send_notifications_and_forget.push_image_only_no_channel",
+    "translation": " 已上传一个或更多个文件"
   },
   {
     "id": "api.post.send_notifications_and_forget.push_in",
@@ -2301,6 +2305,14 @@
   {
     "id": "api.team.leave.left",
     "translation": "%v 离开了团队。"
+  },
+  {
+    "id": "api.team.move_channel.post.error",
+    "translation": "发送频道移动消息失败。"
+  },
+  {
+    "id": "api.team.move_channel.success",
+    "translation": "此频道已从 %v 移至此团队。"
   },
   {
     "id": "api.team.permanent_delete_team.attempting.warn",
@@ -3067,6 +3079,10 @@
     "translation": "不能读取传入的webhook的负载。"
   },
   {
+    "id": "api.webhook.incoming.error",
+    "translation": "无法解码传入的 webhook 混合数据。"
+  },
+  {
     "id": "api.webhook.init.debug",
     "translation": "正在初始化 webhook API 路由"
   },
@@ -3640,7 +3656,7 @@
   },
   {
     "id": "app.plugin.disabled.app_error",
-    "translation": "插件已禁用。"
+    "translation": "日志已停用。请检查您的日志了解详情。"
   },
   {
     "id": "app.plugin.extract.app_error",
@@ -3692,7 +3708,7 @@
   },
   {
     "id": "app.team.join_user_to_team.max_accounts.app_error",
-    "translation": "这个团队已经达到允许的最大用户数量。请与系统管理员联系以设置更高的限制。"
+    "translation": "这个团队已经达到允许的最大帐号数量。请与系统管理员联系以设置更高的限制。"
   },
   {
     "id": "app.user_access_token.disabled",
@@ -4173,6 +4189,18 @@
   {
     "id": "ent.migration.migratetoldap.user_not_found",
     "translation": "未在 AD/LDAP 服务器上找到用户："
+  },
+  {
+    "id": "ent.migration.migratetosaml.email_already_used_by_other_user",
+    "translation": "电子邮箱地址已被其他 SAML 用户使用。"
+  },
+  {
+    "id": "ent.migration.migratetosaml.user_not_found_in_users_mapping_file",
+    "translation": "没有在用户文件里找到用户。"
+  },
+  {
+    "id": "ent.migration.migratetosaml.username_already_used_by_other_user",
+    "translation": "用户名已被其他 Mattermost 用户使用。"
   },
   {
     "id": "ent.saml.attribute.app_error",
@@ -4875,12 +4903,20 @@
     "translation": "消息导出任务 ExportFromTimestamp 必须为时间戳 (unix 时间)。只有在此时间后发送的消息会被导出。"
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "消息导出任务 ExportFormat 必须为 'actiance' 或 'globalrelay'"
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "消息导出任务 FileLocation 比如为可写的目录"
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "消息导出任务 FileLocation 必须为 FileSettings.Directory 的子目录"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
+    "translation": "消息导出任务 GlobalRelayEmailAddress 必须为有效的电子邮箱地址"
   },
   {
     "id": "model.config.is_valid.password_length.app_error",
@@ -5009,6 +5045,10 @@
   {
     "id": "model.config.is_valid.webserver_security.app_error",
     "translation": "错误的网页服务器连接安全值。"
+  },
+  {
+    "id": "model.config.is_valid.websocket_url.app_error",
+    "translation": "Websocket 网址必须时有效的网址并且以 ws:// 或 wss:// 开头。"
   },
   {
     "id": "model.config.is_valid.write_timeout.app_error",
@@ -7095,6 +7135,10 @@
     "translation": "无法打开一个SMTP服务器连接 %v"
   },
   {
+    "id": "utils.mail.sendMail.attachments.write_error",
+    "translation": "给邮件添加附件失败"
+  },
+  {
     "id": "utils.mail.send_mail.close.app_error",
     "translation": "未能关闭连接到SMTP服务器"
   },
@@ -7161,10 +7205,6 @@
   {
     "id": "web.create_dir.error",
     "translation": "创建目录监视器失败 %v"
-  },
-  {
-    "id": "web.dir_fail.error",
-    "translation": "目录中的监视器失败 %v"
   },
   {
     "id": "web.do_load_channel.error",
@@ -7271,16 +7311,8 @@
     "translation": "解析模板 %v"
   },
   {
-    "id": "web.parsing_templates.error",
-    "translation": "解析模板失败 %v"
-  },
-  {
     "id": "web.post_permalink.app_error",
     "translation": "无效Post ID"
-  },
-  {
-    "id": "web.reparse_templates.info",
-    "translation": "修改文件后重新解析模板 %v"
   },
   {
     "id": "web.reset_password.expired_link.app_error",

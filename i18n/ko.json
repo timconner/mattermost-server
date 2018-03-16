@@ -101,7 +101,7 @@
   },
   {
     "id": "api.admin.test_email.reenter_password",
-    "translation": "SMTP 서버, 포트, 사용자 정보가 변경되었습니다. SMTP 비밀번호를 다시 입력해주세요."
+    "translation": "SMTP 서버, 포트 또는 사용자이름이 변경되었습니다. SMTP 비밀번호를 다시 입력해주세요."
   },
   {
     "id": "api.admin.test_email.subject",
@@ -132,10 +132,6 @@
     "translation": "용량이 커서 파일을 업로드 할 수 없습니다."
   },
   {
-    "id": "api.api.init.parsing_templates.debug",
-    "translation": "서버 템플릿 %v 파싱 중"
-  },
-  {
     "id": "api.api.init.parsing_templates.error",
     "translation": "서버 템플릿 %v 를 파싱하는데 실패하였습니다"
   },
@@ -145,7 +141,7 @@
   },
   {
     "id": "api.auth.unable_to_get_user.app_error",
-    "translation": "권한을 확인하기 위한 유저 정보를 가져올 수 없습니다."
+    "translation": "권한을 확인하기 위한 사용자 정보를 가져올 수 없습니다."
   },
   {
     "id": "api.brand.init.debug",
@@ -201,11 +197,11 @@
   },
   {
     "id": "api.channel.change_channel_privacy.private_to_public",
-    "translation": "This channel has been converted to a Public Channel and can be joined by any team member."
+    "translation": "이 채널은 공개 채널로 전환되어 모든 팀원이 들어올 수 있습니다."
   },
   {
     "id": "api.channel.change_channel_privacy.public_to_private",
-    "translation": "This channel has been converted to a Private Channel."
+    "translation": "이 채널은 비공개 채널로  변경되었습니다."
   },
   {
     "id": "api.channel.create_channel.direct_channel.app_error",
@@ -437,7 +433,7 @@
   },
   {
     "id": "api.command.execute_command.not_found.app_error",
-    "translation": "Command with a trigger of '{{.Trigger}}' not found. To send a message beginning with \"/\", try adding an empty space at the beginning of the message."
+    "translation": "'{{.Trigger}}' 트리거에 실행되는 커맨드를 찾지 못했습니다. \"/\"로 시작하는 메시지를 보내려면 메시지 시작 부분에 빈 공간을 추가하십시오."
   },
   {
     "id": "api.command.execute_command.save.app_error",
@@ -525,7 +521,7 @@
   },
   {
     "id": "api.command_channel_header.name",
-    "translation": "header"
+    "translation": "머리글"
   },
   {
     "id": "api.command_channel_header.permission.app_error",
@@ -545,11 +541,11 @@
   },
   {
     "id": "api.command_channel_purpose.desc",
-    "translation": "Edit the channel purpose"
+    "translation": "체널 설명 수정하기"
   },
   {
     "id": "api.command_channel_purpose.direct_group.app_error",
-    "translation": "Cannot set purpose for direct message channels. Use /header to set the header instead."
+    "translation": "개인 메시지의 설명은 설정할 수 없습니다. 머리글을 설정하려면 /header 를 사용하세요."
   },
   {
     "id": "api.command_channel_purpose.hint",
@@ -561,11 +557,11 @@
   },
   {
     "id": "api.command_channel_purpose.name",
-    "translation": "purpose"
+    "translation": "설명"
   },
   {
     "id": "api.command_channel_purpose.permission.app_error",
-    "translation": "당신은 채널 머릿말을 수정할 권한을 가지고 있지 않습니다."
+    "translation": "당신은 채널 설명을 수정할 권한을 가지고 있지 않습니다."
   },
   {
     "id": "api.command_channel_purpose.update_channel.app_error",
@@ -577,11 +573,11 @@
   },
   {
     "id": "api.command_channel_rename.desc",
-    "translation": "Rename the channel"
+    "translation": "채널 이름 바꾸기"
   },
   {
     "id": "api.command_channel_rename.direct_group.app_error",
-    "translation": "개인 메시지 채널은 나갈 수 없습니다"
+    "translation": "개인 메시지 채널의 이름은 변경 할 수 없습니다."
   },
   {
     "id": "api.command_channel_rename.hint",
@@ -589,23 +585,23 @@
   },
   {
     "id": "api.command_channel_rename.message.app_error",
-    "translation": "메시지는 /echo 명령어와 함께 제공되어야 합니다."
+    "translation": "메시지는 /rename 명령어와 함께 제공되어야 합니다."
   },
   {
     "id": "api.command_channel_rename.name",
-    "translation": "rename"
+    "translation": "이름변경"
   },
   {
     "id": "api.command_channel_rename.permission.app_error",
-    "translation": "당신은 채널 머릿말을 수정할 권한을 가지고 있지 않습니다."
+    "translation": "당신은 채널 이름을 수정할 권한을 가지고 있지 않습니다."
   },
   {
     "id": "api.command_channel_rename.too_long.app_error",
-    "translation": "Channel name must be {{.Length}} or fewer characters"
+    "translation": "채널 이름은 {{.Length}} 자 이하여야 합니다."
   },
   {
     "id": "api.command_channel_rename.too_short.app_error",
-    "translation": "Channel name must be {{.Length}} or more characters"
+    "translation": "채널 이름은 {{.Length}} 자 이상이여야 합니다."
   },
   {
     "id": "api.command_channel_rename.update_channel.app_error",
@@ -613,11 +609,11 @@
   },
   {
     "id": "api.command_channel_rename.update_channel.success",
-    "translation": "채널 머릿말이 성공적으로 업데이트되었습니다."
+    "translation": "채널이름이 성공적으로 업데이트되었습니다."
   },
   {
     "id": "api.command_code.desc",
-    "translation": "Display text as a code block"
+    "translation": "텍스트를 코드 블록으로 표시합니다."
   },
   {
     "id": "api.command_code.hint",
@@ -625,11 +621,11 @@
   },
   {
     "id": "api.command_code.message.app_error",
-    "translation": "메시지는 /echo 명령어와 함께 제공되어야 합니다."
+    "translation": "메시지는 /code 명령어와 함께 제공되어야 합니다."
   },
   {
     "id": "api.command_code.name",
-    "translation": "code"
+    "translation": "코드"
   },
   {
     "id": "api.command_collapse.desc",
@@ -649,7 +645,7 @@
   },
   {
     "id": "api.command_dnd.disabled",
-    "translation": "Do Not Disturb is disabled."
+    "translation": "방해 금지 모드가 해제되었습니다."
   },
   {
     "id": "api.command_dnd.error",
@@ -709,7 +705,7 @@
   },
   {
     "id": "api.command_groupmsg.desc",
-    "translation": "Sends a Group Message to the specified users"
+    "translation": "지정된 사용자에게 그룹 메시지를 보냅니다."
   },
   {
     "id": "api.command_groupmsg.fail.app_error",
@@ -764,7 +760,7 @@
   },
   {
     "id": "api.command_help.name",
-    "translation": "help"
+    "translation": "도움말"
   },
   {
     "id": "api.command_join.desc",
@@ -820,7 +816,7 @@
   },
   {
     "id": "api.command_leave.success",
-    "translation": "%v 가 채널을 떠났습니다."
+    "translation": "채널을 떠났습니다."
   },
   {
     "id": "api.command_logout.desc",
@@ -1373,6 +1369,10 @@
     "translation": "파일을 업로드 할 수 없습니다. 머릿말 파싱에 실패하였습니다."
   },
   {
+    "id": "api.file.upload_file.incorrect_number_of_files.app_error",
+    "translation": "Unable to upload files. Incorrect number of files specified."
+  },
+  {
     "id": "api.file.upload_file.large_image.app_error",
     "translation": "File above maximum dimensions could not be uploaded: {{.Filename}}"
   },
@@ -1772,7 +1772,7 @@
   },
   {
     "id": "api.post.make_direct_channel_visible.get_2_members.error",
-    "translation": "다이렉트 채널에 2명의 구성원을 가져올 수 없습니다. channel_id={{.ChannelId}}"
+    "translation": "개인 메시지 채널에 2명의 사용자를 가져오는데 실패했습니다. 채널 아이디={{.ChannelId}}"
   },
   {
     "id": "api.post.make_direct_channel_visible.get_members.error",
@@ -1817,6 +1817,10 @@
   {
     "id": "api.post.send_notifications_and_forget.push_image_only_dm",
     "translation": " uploaded one or more files in a direct message"
+  },
+  {
+    "id": "api.post.send_notifications_and_forget.push_image_only_no_channel",
+    "translation": " uploaded one or more files"
   },
   {
     "id": "api.post.send_notifications_and_forget.push_in",
@@ -2301,6 +2305,14 @@
   {
     "id": "api.team.leave.left",
     "translation": "%v left the team."
+  },
+  {
+    "id": "api.team.move_channel.post.error",
+    "translation": "들어옴/나감 메시지를 등록하는 데 실패함"
+  },
+  {
+    "id": "api.team.move_channel.success",
+    "translation": "This channel has been moved to this team from %v."
   },
   {
     "id": "api.team.permanent_delete_team.attempting.warn",
@@ -3067,6 +3079,10 @@
     "translation": "Incoming webhook의 payload를 읽을 수 없습니다."
   },
   {
+    "id": "api.webhook.incoming.error",
+    "translation": "Could not decode the multipart payload of incoming webhook."
+  },
+  {
     "id": "api.webhook.init.debug",
     "translation": "webhook API 경로 초기화 중"
   },
@@ -3620,7 +3636,7 @@
   },
   {
     "id": "app.notification.subject.direct.full",
-    "translation": "{{.SubjectText}} on {{.TeamDisplayName}} at {{.Month}} {{.Day}}, {{.Year}}"
+    "translation": "[{{.SiteName}}] {{.SenderDisplayName}} (으)로부터 {{.Month}} {{.Day}}, {{.Year}} 에 새로운 개인 메시지가 왔습니다."
   },
   {
     "id": "app.notification.subject.notification.full",
@@ -3640,7 +3656,7 @@
   },
   {
     "id": "app.plugin.disabled.app_error",
-    "translation": "Plugins have been disabled."
+    "translation": "Plugins have been disabled. Please check your logs for details."
   },
   {
     "id": "app.plugin.extract.app_error",
@@ -3696,7 +3712,7 @@
   },
   {
     "id": "app.user_access_token.disabled",
-    "translation": "Personal access tokens are disabled on this server. Please contact your system administrator for details."
+    "translation": "개인 액세스 토큰이 현재 서버에서 활성화 되어있지 않습니다. 시스템 관리자에게 연락하여 자세한 사항을 확인하시길 바랍니다."
   },
   {
     "id": "app.user_access_token.invalid_or_missing",
@@ -4173,6 +4189,18 @@
   {
     "id": "ent.migration.migratetoldap.user_not_found",
     "translation": "AD/LDAP 서버에서 사용자를 찾을 수 없음: "
+  },
+  {
+    "id": "ent.migration.migratetosaml.email_already_used_by_other_user",
+    "translation": "Email already used by another SAML user."
+  },
+  {
+    "id": "ent.migration.migratetosaml.user_not_found_in_users_mapping_file",
+    "translation": "User not found in the users file."
+  },
+  {
+    "id": "ent.migration.migratetosaml.username_already_used_by_other_user",
+    "translation": "Username already used by another Mattermost user."
   },
   {
     "id": "ent.saml.attribute.app_error",
@@ -4875,12 +4903,20 @@
     "translation": "Message export job ExportFromTimestamp must be a timestamp (expressed in seconds since unix epoch). Only messages sent after this timestamp will be exported."
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "Message export job ExportFormat must be one of either 'actiance' or 'globalrelay'"
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "Message export job FileLocation must be a writable directory that export data will be written to"
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "Message export job FileLocation must be a sub-directory of FileSettings.Directory"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
+    "translation": "Message export job GlobalRelayEmailAddress must be set to a valid email address"
   },
   {
     "id": "model.config.is_valid.password_length.app_error",
@@ -5009,6 +5045,10 @@
   {
     "id": "model.config.is_valid.webserver_security.app_error",
     "translation": "webserver connection security에 대해 허용되지 않은 값입니다."
+  },
+  {
+    "id": "model.config.is_valid.websocket_url.app_error",
+    "translation": "WebRTC Gateway Websocket Url은 URL형식이여야 하며 ws:// 또는 wss://로 시작해야합니다."
   },
   {
     "id": "model.config.is_valid.write_timeout.app_error",
@@ -7095,6 +7135,10 @@
     "translation": "Failed to open a connection to SMTP server %v"
   },
   {
+    "id": "utils.mail.sendMail.attachments.write_error",
+    "translation": "Failed to write attachment to email"
+  },
+  {
     "id": "utils.mail.send_mail.close.app_error",
     "translation": "Failed to close connection to SMTP server"
   },
@@ -7161,10 +7205,6 @@
   {
     "id": "web.create_dir.error",
     "translation": "Failed to create directory watcher %v"
-  },
-  {
-    "id": "web.dir_fail.error",
-    "translation": "Failed in directory watcher %v"
   },
   {
     "id": "web.do_load_channel.error",
@@ -7271,16 +7311,8 @@
     "translation": "%v에서 서버 템플릿 파싱중"
   },
   {
-    "id": "web.parsing_templates.error",
-    "translation": "서버 템플릿 %v 를 파싱하는데 실패하였습니다"
-  },
-  {
     "id": "web.post_permalink.app_error",
     "translation": "잘못된 글 ID"
-  },
-  {
-    "id": "web.reparse_templates.info",
-    "translation": "Re-parsing templates because of modified file %v"
   },
   {
     "id": "web.reset_password.expired_link.app_error",

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -42,10 +43,11 @@ func runServerCmd(cmd *cobra.Command, args []string) error {
 
 	disableConfigWatch, _ := cmd.Flags().GetBool("disableconfigwatch")
 
-	return runServer(config, disableConfigWatch)
+	interruptChan := make(chan os.Signal, 1)
+	return runServer(config, disableConfigWatch, interruptChan)
 }
 
-func runServer(configFileLocation string, disableConfigWatch bool) error {
+func runServer(configFileLocation string, disableConfigWatch bool, interruptChan chan os.Signal) error {
 	options := []app.Option{app.ConfigFile(configFileLocation)}
 	if disableConfigWatch {
 		options = append(options, app.DisableConfigWatch)
@@ -53,7 +55,7 @@ func runServer(configFileLocation string, disableConfigWatch bool) error {
 
 	a, err := app.New(options...)
 	if err != nil {
-		l4g.Error(err.Error())
+		l4g.Critical(err.Error())
 		return err
 	}
 	defer a.Shutdown()
@@ -87,7 +89,12 @@ func runServer(configFileLocation string, disableConfigWatch bool) error {
 		}
 	})
 
-	a.StartServer()
+	serverErr := a.StartServer()
+	if serverErr != nil {
+		l4g.Critical(serverErr.Error())
+		return serverErr
+	}
+
 	api4.Init(a, a.Srv.Router, false)
 	api3 := api.Init(a, a.Srv.Router)
 	wsapi.Init(a, a.Srv.WebSocketRouter)
@@ -124,11 +131,21 @@ func runServer(configFileLocation string, disableConfigWatch bool) error {
 
 	a.EnsureDiagnosticId()
 
-	go runSecurityJob(a)
-	go runDiagnosticsJob(a)
-	go runSessionCleanupJob(a)
-	go runTokenCleanupJob(a)
-	go runCommandWebhookCleanupJob(a)
+	a.Go(func() {
+		runSecurityJob(a)
+	})
+	a.Go(func() {
+		runDiagnosticsJob(a)
+	})
+	a.Go(func() {
+		runSessionCleanupJob(a)
+	})
+	a.Go(func() {
+		runTokenCleanupJob(a)
+	})
+	a.Go(func() {
+		runCommandWebhookCleanupJob(a)
+	})
 
 	if complianceI := a.Compliance; complianceI != nil {
 		complianceI.StartComplianceDailyJob()
@@ -158,11 +175,12 @@ func runServer(configFileLocation string, disableConfigWatch bool) error {
 		a.Jobs.StartSchedulers()
 	}
 
+	notifyReady()
+
 	// wait for kill signal before attempting to gracefully shutdown
 	// the running service
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-c
+	signal.Notify(interruptChan, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-interruptChan
 
 	if a.Cluster != nil {
 		a.Cluster.StopInterNodeCommunication()
@@ -227,6 +245,35 @@ func doDiagnostics(a *app.App) {
 	if *a.Config().LogSettings.EnableDiagnostics {
 		a.SendDailyDiagnostics()
 	}
+}
+
+func notifyReady() {
+	// If the environment vars provide a systemd notification socket,
+	// notify systemd that the server is ready.
+	systemdSocket := os.Getenv("NOTIFY_SOCKET")
+	if systemdSocket != "" {
+		l4g.Info("Sending systemd READY notification.")
+
+		err := sendSystemdReadyNotification(systemdSocket)
+		if err != nil {
+			l4g.Error(err.Error())
+		}
+	}
+}
+
+func sendSystemdReadyNotification(socketPath string) error {
+	msg := "READY=1"
+	addr := &net.UnixAddr{
+		Name: socketPath,
+		Net:  "unixgram",
+	}
+	conn, err := net.DialUnix(addr.Net, nil, addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	_, err = conn.Write([]byte(msg))
+	return err
 }
 
 func doTokenCleanup(a *app.App) {

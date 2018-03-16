@@ -89,7 +89,7 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 			delete(mentionedUserIds, post.UserId)
 		}
 
-		if len(m.OtherPotentialMentions) > 0 {
+		if len(m.OtherPotentialMentions) > 0 && !post.IsSystemMessage() {
 			if result := <-a.Srv.Store.User().GetProfilesByUsernames(m.OtherPotentialMentions, team.Id); result.Err == nil {
 				outOfChannelMentions := result.Data.([]*model.User)
 				if channel.Type != model.CHANNEL_GROUP {
@@ -362,7 +362,7 @@ func (a *App) sendNotificationEmail(post *model.Post, user *model.User, channel 
 		emailNotificationContentsType = *a.Config().EmailSettings.EmailNotificationContentsType
 	}
 
-	teamURL := utils.GetSiteURL() + "/" + team.Name
+	teamURL := a.GetSiteURL() + "/" + team.Name
 	var bodyText = a.getNotificationEmailBody(user, post, channel, senderName, team.Name, teamURL, emailNotificationContentsType, translateFunc)
 
 	a.Go(func() {
@@ -421,7 +421,7 @@ func (a *App) getNotificationEmailBody(recipient *model.User, post *model.Post, 
 		bodyPage = a.NewEmailTemplate("post_body_generic", recipient.Locale)
 	}
 
-	bodyPage.Props["SiteURL"] = utils.GetSiteURL()
+	bodyPage.Props["SiteURL"] = a.GetSiteURL()
 	if teamName != "select_team" {
 		bodyPage.Props["TeamLink"] = teamURL + "/pl/" + post.Id
 	} else {
@@ -623,7 +623,9 @@ func (a *App) getPushNotificationMessage(postMessage string, wasMentioned bool, 
 	message := ""
 	category := ""
 
-	if *a.Config().EmailSettings.PushNotificationContents == model.FULL_NOTIFICATION {
+	contentsConfig := *a.Config().EmailSettings.PushNotificationContents
+
+	if contentsConfig == model.FULL_NOTIFICATION {
 		category = model.CATEGORY_CAN_REPLY
 
 		if channelType == model.CHANNEL_DIRECT {
@@ -631,7 +633,7 @@ func (a *App) getPushNotificationMessage(postMessage string, wasMentioned bool, 
 		} else {
 			message = senderName + userLocale("api.post.send_notifications_and_forget.push_in") + channelName + ": " + model.ClearMentionTags(postMessage)
 		}
-	} else if *a.Config().EmailSettings.PushNotificationContents == model.GENERIC_NO_CHANNEL_NOTIFICATION {
+	} else if contentsConfig == model.GENERIC_NO_CHANNEL_NOTIFICATION {
 		if channelType == model.CHANNEL_DIRECT {
 			category = model.CATEGORY_CAN_REPLY
 
@@ -659,6 +661,8 @@ func (a *App) getPushNotificationMessage(postMessage string, wasMentioned bool, 
 	if len(postMessage) == 0 && hasFiles {
 		if channelType == model.CHANNEL_DIRECT {
 			message = senderName + userLocale("api.post.send_notifications_and_forget.push_image_only_dm")
+		} else if contentsConfig == model.GENERIC_NO_CHANNEL_NOTIFICATION {
+			message = senderName + userLocale("api.post.send_notifications_and_forget.push_image_only_no_channel")
 		} else {
 			message = senderName + userLocale("api.post.send_notifications_and_forget.push_image_only") + channelName
 		}

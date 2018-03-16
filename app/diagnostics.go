@@ -243,6 +243,8 @@ func (a *App) trackConfig() {
 		"isdefault_image_proxy_type":                              isDefault(*cfg.ServiceSettings.ImageProxyType, ""),
 		"isdefault_image_proxy_url":                               isDefault(*cfg.ServiceSettings.ImageProxyURL, ""),
 		"isdefault_image_proxy_options":                           isDefault(*cfg.ServiceSettings.ImageProxyOptions, ""),
+		"websocket_url":                                           isDefault(*cfg.ServiceSettings.WebsocketURL, ""),
+		"allow_cookies_for_subdomains":                            *cfg.ServiceSettings.AllowCookiesForSubdomains,
 	})
 
 	a.SendDiagnostic(TRACK_CONFIG_TEAM, map[string]interface{}{
@@ -501,6 +503,7 @@ func (a *App) trackConfig() {
 
 	a.SendDiagnostic(TRACK_CONFIG_MESSAGE_EXPORT, map[string]interface{}{
 		"enable_message_export":         *cfg.MessageExportSettings.EnableExport,
+		"export_format":                 *cfg.MessageExportSettings.ExportFormat,
 		"daily_run_time":                *cfg.MessageExportSettings.DailyRunTime,
 		"default_export_from_timestamp": *cfg.MessageExportSettings.ExportFromTimestamp,
 		"batch_size":                    *cfg.MessageExportSettings.BatchSize,

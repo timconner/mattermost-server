@@ -132,10 +132,6 @@
     "translation": "Dateiupload nicht möglich. Datei ist zu groß."
   },
   {
-    "id": "api.api.init.parsing_templates.debug",
-    "translation": "Vorlagen in %v werden verarbeitet"
-  },
-  {
     "id": "api.api.init.parsing_templates.error",
     "translation": "Das Server-Template %v konnte nicht verarbeitet werden"
   },
@@ -1373,6 +1369,10 @@
     "translation": "Dateiupload nicht möglich. Header können nicht geparst werden."
   },
   {
+    "id": "api.file.upload_file.incorrect_number_of_files.app_error",
+    "translation": "Konnte Dateien nicht hochladen. Falsche Anzahl von Dateien spezifiziert."
+  },
+  {
     "id": "api.file.upload_file.large_image.app_error",
     "translation": "Datei über den maximalen Dimensionen konnte nicht hochgeladen werden: {{.Filename}}"
   },
@@ -1618,7 +1618,7 @@
   },
   {
     "id": "api.oauth.singup_with_oauth.expired_link.app_error",
-    "translation": "Der Registrierungs-Link ist abgelaufen"
+    "translation": "Der Registrierungslink ist abgelaufen"
   },
   {
     "id": "api.oauth.singup_with_oauth.invalid_link.app_error",
@@ -1812,11 +1812,15 @@
   },
   {
     "id": "api.post.send_notifications_and_forget.push_image_only",
-    "translation": " Eine oder mehrere Dateien hochgeladen in "
+    "translation": " hat eine oder mehrere Dateien hochgeladen in "
   },
   {
     "id": "api.post.send_notifications_and_forget.push_image_only_dm",
-    "translation": " Eine oder mehrere Dateien in einer Direktnachricht hochgeladen"
+    "translation": " hat eine oder mehrere Dateien in einer Direktnachricht hochgeladen"
+  },
+  {
+    "id": "api.post.send_notifications_and_forget.push_image_only_no_channel",
+    "translation": " hat eine oder mehrere Dateien hochgeladen"
   },
   {
     "id": "api.post.send_notifications_and_forget.push_in",
@@ -2303,6 +2307,14 @@
     "translation": "%v hat das Team verlassen."
   },
   {
+    "id": "api.team.move_channel.post.error",
+    "translation": "Fehler beim Senden der Nachricht zur Verschiebung des Kanals."
+  },
+  {
+    "id": "api.team.move_channel.success",
+    "translation": "Dieser Kanal wurde von %v in dieses Team verschoben."
+  },
+  {
     "id": "api.team.permanent_delete_team.attempting.warn",
     "translation": "Versuche Team permanent zu löschen %v id=%v"
   },
@@ -2708,7 +2720,7 @@
   },
   {
     "id": "api.user.create_user.signup_link_mismatched_invite_id.app_error",
-    "translation": "Der Einladungslink scheint nicht gültig zu sein"
+    "translation": "Der Registrierungslink scheint nicht gültig zu sein"
   },
   {
     "id": "api.user.create_user.team_name.app_error",
@@ -3065,6 +3077,10 @@
   {
     "id": "api.webhook.incoming.debug.error",
     "translation": "Konnte Payload des eingehenden Webhooks nicht verarbeiten."
+  },
+  {
+    "id": "api.webhook.incoming.error",
+    "translation": "Konnte die Multipart-Daten des eingehenden Webhooks nicht entschlüsseln."
   },
   {
     "id": "api.webhook.init.debug",
@@ -3640,7 +3656,7 @@
   },
   {
     "id": "app.plugin.disabled.app_error",
-    "translation": "Plugins wurden deaktiviert."
+    "translation": "Plugins wurden deaktiviert. Bitte prüfen Sie Ihre Logs für Details."
   },
   {
     "id": "app.plugin.extract.app_error",
@@ -4173,6 +4189,18 @@
   {
     "id": "ent.migration.migratetoldap.user_not_found",
     "translation": "Kann Benutzer nicht auf AD/LDAP-Server finden: "
+  },
+  {
+    "id": "ent.migration.migratetosaml.email_already_used_by_other_user",
+    "translation": "E-Mail-Adresse wird bereits von einem anderen SAML-Benutzer verwendet."
+  },
+  {
+    "id": "ent.migration.migratetosaml.user_not_found_in_users_mapping_file",
+    "translation": "Benutzer nicht in der Benutzerdatei gefunden."
+  },
+  {
+    "id": "ent.migration.migratetosaml.username_already_used_by_other_user",
+    "translation": "Benutzername wird bereits von einem anderen Mattermost-Benutzer verwendet."
   },
   {
     "id": "ent.saml.attribute.app_error",
@@ -4875,12 +4903,20 @@
     "translation": "Nachrichten-Export-Aufgabe \"ExportFromTimestamp\" muss ein Zeitstempel (angegeben in Sekunden seit der Unix-Epoche) sein. Nur Nachrichten nach diesem Zeitpunkt werden exportiert."
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "'ExportFormat' des Nachrichten-Export-Jobs muss 'actiance' oder 'globalrelay' sein."
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "Nachrichten-Export-Aufgabe \"FileLocation\" muss ein beschreibbares Verzeichnis sein in welches die Exportdaten geschrieben werden"
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "Nachrichten-Export-Aufgabe \"FileLocation\" muss ein Unterverzeichnis von \"FileSettings.Directory\" sein"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
+    "translation": "Nachrichten-Export-Job GlobalRelayEmailAddress muss eine gültige E-Mail-Adresse sein."
   },
   {
     "id": "model.config.is_valid.password_length.app_error",
@@ -5009,6 +5045,10 @@
   {
     "id": "model.config.is_valid.webserver_security.app_error",
     "translation": "Ungültiger Wert für Webserver-Verbindungssicherheit."
+  },
+  {
+    "id": "model.config.is_valid.websocket_url.app_error",
+    "translation": "Websocket-URL muss eine gültige URL sein sowie mit ws:// oder wss:// beginnen."
   },
   {
     "id": "model.config.is_valid.write_timeout.app_error",
@@ -7095,6 +7135,10 @@
     "translation": "Fehler beim Öffnen einer Verbindung zum SMTP-Server %v"
   },
   {
+    "id": "utils.mail.sendMail.attachments.write_error",
+    "translation": "Fehler beim Hinzufügen des Mailanhanges"
+  },
+  {
     "id": "utils.mail.send_mail.close.app_error",
     "translation": "Fehler beim Schließen der Verbindung zum SMTP-Server"
   },
@@ -7160,10 +7204,6 @@
   },
   {
     "id": "web.create_dir.error",
-    "translation": "Fehler beim Erstellen der Ordner Überwachung %v"
-  },
-  {
-    "id": "web.dir_fail.error",
     "translation": "Fehler beim Erstellen der Ordner Überwachung %v"
   },
   {
@@ -7271,16 +7311,8 @@
     "translation": "Templates in %v werden geparst"
   },
   {
-    "id": "web.parsing_templates.error",
-    "translation": "Die Templates in %v konnte nicht verarbeitet werden"
-  },
-  {
     "id": "web.post_permalink.app_error",
     "translation": "Ungültige Nachrichten-ID"
-  },
-  {
-    "id": "web.reparse_templates.info",
-    "translation": "Erneute Analyze des Templates aufgrund veränderter Datei %v"
   },
   {
     "id": "web.reset_password.expired_link.app_error",

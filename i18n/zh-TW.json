@@ -132,10 +132,6 @@
     "translation": "無法上傳檔案。檔案過大。"
   },
   {
-    "id": "api.api.init.parsing_templates.debug",
-    "translation": "解析伺服器樣版：%v"
-  },
-  {
     "id": "api.api.init.parsing_templates.error",
     "translation": "解析伺服器樣板 %v 失敗"
   },
@@ -1373,6 +1369,10 @@
     "translation": "無法上傳檔案。無法解析標頭。"
   },
   {
+    "id": "api.file.upload_file.incorrect_number_of_files.app_error",
+    "translation": "無法上傳檔案。檔案數量不對。"
+  },
+  {
     "id": "api.file.upload_file.large_image.app_error",
     "translation": "無法上傳超過最大尺寸的檔案：{{.Filename}}"
   },
@@ -1812,11 +1812,15 @@
   },
   {
     "id": "api.post.send_notifications_and_forget.push_image_only",
-    "translation": "已上傳一個或更多檔案"
+    "translation": "已上傳一個或更多檔案至"
   },
   {
     "id": "api.post.send_notifications_and_forget.push_image_only_dm",
     "translation": "在直接傳訊中已上傳一個或更多檔案"
+  },
+  {
+    "id": "api.post.send_notifications_and_forget.push_image_only_no_channel",
+    "translation": "已上傳一個或更多檔案"
   },
   {
     "id": "api.post.send_notifications_and_forget.push_in",
@@ -2301,6 +2305,14 @@
   {
     "id": "api.team.leave.left",
     "translation": "%v 已離開團隊。 "
+  },
+  {
+    "id": "api.team.move_channel.post.error",
+    "translation": "發送頻道移動訊息失敗"
+  },
+  {
+    "id": "api.team.move_channel.success",
+    "translation": "此頻道已從 %v 移動至此團隊。"
   },
   {
     "id": "api.team.permanent_delete_team.attempting.warn",
@@ -3067,6 +3079,10 @@
     "translation": "無法讀取傳入的 Webhook 的內容。"
   },
   {
+    "id": "api.webhook.incoming.error",
+    "translation": "無法解碼 Incoming Webhook 的 multipart 內容。"
+  },
+  {
     "id": "api.webhook.init.debug",
     "translation": "正在初始化 Webhook API 路徑"
   },
@@ -3640,7 +3656,7 @@
   },
   {
     "id": "app.plugin.disabled.app_error",
-    "translation": "模組已被停用。"
+    "translation": "模組已被停用。詳情請看系統紀錄。"
   },
   {
     "id": "app.plugin.extract.app_error",
@@ -4173,6 +4189,18 @@
   {
     "id": "ent.migration.migratetoldap.user_not_found",
     "translation": "找不到使用者，AD/LDAP 伺服器："
+  },
+  {
+    "id": "ent.migration.migratetosaml.email_already_used_by_other_user",
+    "translation": "電子郵件已被其他 SAML 使用者使用。"
+  },
+  {
+    "id": "ent.migration.migratetosaml.user_not_found_in_users_mapping_file",
+    "translation": "在使用者檔案中找不到使用者。"
+  },
+  {
+    "id": "ent.migration.migratetosaml.username_already_used_by_other_user",
+    "translation": "使用者名稱已被其他 Mattermost 使用者使用。 "
   },
   {
     "id": "ent.saml.attribute.app_error",
@@ -4875,12 +4903,20 @@
     "translation": "匯出訊息工作 ExportFromTimestamp 設定必須為時間戳記 (以 Unix Epoch 以來的秒數表示)。只有在此時間戳記之後發送的訊息會被匯出。"
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "訊息匯出工作的 ExportFormat 必須為 'actiance' 或 'globalrelay'"
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "匯出訊息工作 FileLocation 設定必須為可寫入的目錄，匯出資料將寫入此處"
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "匯出訊息工作 FileLocation 設定必須為 FileSettings.Directory 的子目錄"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
+    "translation": "訊息匯出工作的 GlobalRelayEmailAddress 必須為 'actiance' 或 'globalrelay'"
   },
   {
     "id": "model.config.is_valid.password_length.app_error",
@@ -5009,6 +5045,10 @@
   {
     "id": "model.config.is_valid.webserver_security.app_error",
     "translation": "網頁伺服器連線安全的值不正確。"
+  },
+  {
+    "id": "model.config.is_valid.websocket_url.app_error",
+    "translation": "Websocket 網址必須是以 ws:// 或 wss:// 起始的有效網址。"
   },
   {
     "id": "model.config.is_valid.write_timeout.app_error",
@@ -7095,6 +7135,10 @@
     "translation": "開啟對 SMTP 伺服器 %v 的連線時失敗"
   },
   {
+    "id": "utils.mail.sendMail.attachments.write_error",
+    "translation": "無法寫入附加檔案到電子郵件"
+  },
+  {
     "id": "utils.mail.send_mail.close.app_error",
     "translation": "關閉對 SMTP 伺服器的連線失敗"
   },
@@ -7160,10 +7204,6 @@
   },
   {
     "id": "web.create_dir.error",
-    "translation": "建立目錄監控 %v 失敗"
-  },
-  {
-    "id": "web.dir_fail.error",
     "translation": "建立目錄監控 %v 失敗"
   },
   {
@@ -7271,16 +7311,8 @@
     "translation": "於 %v 解析樣板"
   },
   {
-    "id": "web.parsing_templates.error",
-    "translation": "解析樣板 %v 失敗"
-  },
-  {
     "id": "web.post_permalink.app_error",
     "translation": "無效的張貼 ID"
-  },
-  {
-    "id": "web.reparse_templates.info",
-    "translation": "因檔案 %v 變動因此重新解析樣板"
   },
   {
     "id": "web.reset_password.expired_link.app_error",

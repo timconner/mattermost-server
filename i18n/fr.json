@@ -132,10 +132,6 @@
     "translation": "Impossible d'envoyer le fichier. Le fichier est trop volumineux."
   },
   {
-    "id": "api.api.init.parsing_templates.debug",
-    "translation": "Analyse des gabarits du serveur %v en cours"
-  },
-  {
     "id": "api.api.init.parsing_templates.error",
     "translation": "Impossible d'analyser les modèles du serveur %v"
   },
@@ -1373,6 +1369,10 @@
     "translation": "Impossible d'envoyer le fichier. L'entête ne peut être analysé."
   },
   {
+    "id": "api.file.upload_file.incorrect_number_of_files.app_error",
+    "translation": "Unable to upload files. Incorrect number of files specified."
+  },
+  {
     "id": "api.file.upload_file.large_image.app_error",
     "translation": "Le fichier est au-dessus des limites de dimensions, il n'a pas pu être envoyé : {{.Filename}}"
   },
@@ -1812,11 +1812,15 @@
   },
   {
     "id": "api.post.send_notifications_and_forget.push_image_only",
-    "translation": " A envoyé un ou plusieurs fichiers sur "
+    "translation": " a envoyé un ou plusieurs fichiers dans "
   },
   {
     "id": "api.post.send_notifications_and_forget.push_image_only_dm",
-    "translation": " A envoyé un ou plusieurs fichiers dans un message personnel"
+    "translation": " a envoyé un ou plusieurs fichiers dans un message personnel"
+  },
+  {
+    "id": "api.post.send_notifications_and_forget.push_image_only_no_channel",
+    "translation": " a envoyé un ou plusieurs fichiers dans "
   },
   {
     "id": "api.post.send_notifications_and_forget.push_in",
@@ -2301,6 +2305,14 @@
   {
     "id": "api.team.leave.left",
     "translation": "%v a quitté l'équipe."
+  },
+  {
+    "id": "api.team.move_channel.post.error",
+    "translation": "Impossible de publier la description du canal"
+  },
+  {
+    "id": "api.team.move_channel.success",
+    "translation": "This channel has been moved to this team from %v."
   },
   {
     "id": "api.team.permanent_delete_team.attempting.warn",
@@ -3067,6 +3079,10 @@
     "translation": "Impossible de lire la charge utile du webhook entrant."
   },
   {
+    "id": "api.webhook.incoming.error",
+    "translation": "Could not decode the multipart payload of incoming webhook."
+  },
+  {
     "id": "api.webhook.init.debug",
     "translation": "Initialisation des routes de l'API webhook"
   },
@@ -3640,7 +3656,7 @@
   },
   {
     "id": "app.plugin.disabled.app_error",
-    "translation": "Les plugins ont été désactivés."
+    "translation": "Plugins have been disabled. Please check your logs for details."
   },
   {
     "id": "app.plugin.extract.app_error",
@@ -4175,6 +4191,18 @@
     "translation": "Impossible de trouver l'utilisateur sur le serveur AD/LDAP : "
   },
   {
+    "id": "ent.migration.migratetosaml.email_already_used_by_other_user",
+    "translation": "Email already used by another SAML user."
+  },
+  {
+    "id": "ent.migration.migratetosaml.user_not_found_in_users_mapping_file",
+    "translation": "User not found in the users file."
+  },
+  {
+    "id": "ent.migration.migratetosaml.username_already_used_by_other_user",
+    "translation": "Username already used by another Mattermost user."
+  },
+  {
     "id": "ent.saml.attribute.app_error",
     "translation": "La connexion via SAML a échoué car un des attributs est incorrect. Veuillez contacter votre administrateur système."
   },
@@ -4648,7 +4676,7 @@
   },
   {
     "id": "model.config.is_valid.atmos_camo_image_proxy_options.app_error",
-    "translation": "Les paramètres d'options du proxy d'image atmos/camo sont invalides. Votre clé partagée doit être définie comme paramètre."
+    "translation": "Les paramètres d'options du proxy d'images atmos/camo sont invalides. Votre clé partagée doit être définie comme paramètre."
   },
   {
     "id": "model.config.is_valid.cluster_email_batching.app_error",
@@ -4875,12 +4903,20 @@
     "translation": "Le paramètre ExportFromTimestamp de la tâche d'exportation de messages doit être un horodatage (exprimé en secondes depuis l'epoch UNIX). Seuls les messages envoyés après cet horodatage seront exportés."
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "Message export job ExportFormat must be one of either 'actiance' or 'globalrelay'"
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "Le paramètre FileLocation de la tâche d'exportation de messages doit être un dossier avec droits d'écriture. Il s'agit du dossier dans lequel les données seront exportées."
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "Le paramètre FileLocation de la tâche d'exportation de messages doit être un sous-dossier de FileSettings.Directory."
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
+    "translation": "Message export job GlobalRelayEmailAddress must be set to a valid email address"
   },
   {
     "id": "model.config.is_valid.password_length.app_error",
@@ -5009,6 +5045,10 @@
   {
     "id": "model.config.is_valid.webserver_security.app_error",
     "translation": "Valeur invalide pour la sécurité de la connexion au serveur web."
+  },
+  {
+    "id": "model.config.is_valid.websocket_url.app_error",
+    "translation": "URL de site invalide. Il doit s'agir d'une URL valide et commencer par http:// ou https://."
   },
   {
     "id": "model.config.is_valid.write_timeout.app_error",
@@ -7095,6 +7135,10 @@
     "translation": "Échec de l'ouverture de connexion auprès du serveur SMTP %v"
   },
   {
+    "id": "utils.mail.sendMail.attachments.write_error",
+    "translation": "Failed to write attachment to email"
+  },
+  {
     "id": "utils.mail.send_mail.close.app_error",
     "translation": "Échec de fermeture de connexion auprès du serveur SMTP"
   },
@@ -7161,10 +7205,6 @@
   {
     "id": "web.create_dir.error",
     "translation": "Échec de la création de l'observateur de dossier %v"
-  },
-  {
-    "id": "web.dir_fail.error",
-    "translation": "Échec de l'observateur de dossier %v"
   },
   {
     "id": "web.do_load_channel.error",
@@ -7271,16 +7311,8 @@
     "translation": "Analyse des gabarits sur %v"
   },
   {
-    "id": "web.parsing_templates.error",
-    "translation": "Impossible d'analyser les gabarits %v"
-  },
-  {
     "id": "web.post_permalink.app_error",
     "translation": "ID de message invalide"
-  },
-  {
-    "id": "web.reparse_templates.info",
-    "translation": "Re-examen des gabarits en raison de la modification du fichier %v"
   },
   {
     "id": "web.reset_password.expired_link.app_error",

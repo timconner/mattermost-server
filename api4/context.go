@@ -449,6 +449,18 @@ func (c *Context) RequireFileId() *Context {
 	return c
 }
 
+func (c *Context) RequireFilename() *Context {
+	if c.Err != nil {
+		return c
+	}
+
+	if len(c.Params.Filename) == 0 {
+		c.SetInvalidUrlParam("filename")
+	}
+
+	return c
+}
+
 func (c *Context) RequirePluginId() *Context {
 	if c.Err != nil {
 		return c
