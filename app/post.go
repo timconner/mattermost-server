@@ -157,6 +157,10 @@ func (a *App) CreatePost(post *model.Post, channel *model.Channel, triggerWebhoo
 
 	post.Hashtags, _ = model.ParseHashtags(post.Message)
 
+        if user.Props["is_bot"] == "true" {
+            post.AddProp("from_webhook", "true");
+        }
+
 	if err := a.FillInPostProps(post, channel); err != nil {
 		return nil, err
 	}
