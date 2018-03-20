@@ -90,7 +90,7 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 		}
 
 	} else {
-		keywords := a.GetMentionKeywordsInChannel(profileMap, post.Type != model.POST_HEADER_CHANGE && post.Type != model.POST_PURPOSE_CHANGE)
+		keywords := a.GetMentionKeywordsInChannel(profileMap, post.Type != model.POST_HEADER_CHANGE && post.Type != model.POST_PURPOSE_CHANGE && a.HasPermissionToTeam(sender.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM))
 
 		m := GetExplicitMentions(post, keywords)
 
@@ -232,40 +232,38 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 		}
 	}
 
-	T := utils.GetUserTranslations(sender.Locale)
-
 	// If the channel has more than 1K users then @here is disabled
-	if hereNotification && int64(len(profileMap)) > *a.Config().TeamSettings.MaxNotificationsPerChannel {
+	if hereNotification && !a.HasPermissionToTeam(sender.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
 		hereNotification = false
 		a.SendEphemeralPost(
 			post.UserId,
 			&model.Post{
 				ChannelId: post.ChannelId,
-				Message:   T("api.post.disabled_here", map[string]interface{}{"Users": *a.Config().TeamSettings.MaxNotificationsPerChannel}),
+				Message:   "Only admins are allowed to notify all active users in the channel.",
 				CreateAt:  post.CreateAt + 1,
 			},
 		)
 	}
 
 	// If the channel has more than 1K users then @channel is disabled
-	if channelNotification && int64(len(profileMap)) > *a.Config().TeamSettings.MaxNotificationsPerChannel {
+	if channelNotification && !a.HasPermissionToTeam(sender.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
 		a.SendEphemeralPost(
 			post.UserId,
 			&model.Post{
 				ChannelId: post.ChannelId,
-				Message:   T("api.post.disabled_channel", map[string]interface{}{"Users": *a.Config().TeamSettings.MaxNotificationsPerChannel}),
+				Message:   "Only admins are allowed to notify all channel members.",
 				CreateAt:  post.CreateAt + 1,
 			},
 		)
 	}
 
 	// If the channel has more than 1K users then @all is disabled
-	if allNotification && int64(len(profileMap)) > *a.Config().TeamSettings.MaxNotificationsPerChannel {
+	if allNotification && !a.HasPermissionToTeam(sender.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
 		a.SendEphemeralPost(
 			post.UserId,
 			&model.Post{
 				ChannelId: post.ChannelId,
-				Message:   T("api.post.disabled_all", map[string]interface{}{"Users": *a.Config().TeamSettings.MaxNotificationsPerChannel}),
+				Message:   "Only admins are allowed to notify all users.",
 				CreateAt:  post.CreateAt + 1,
 			},
 		)
