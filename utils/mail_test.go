@@ -7,18 +7,20 @@ import (
 	"strings"
 	"testing"
 
+	"net/smtp"
+
 	"github.com/stretchr/testify/require"
 )
 
-func TestMailConnection(t *testing.T) {
+func TestMailConnectionFromConfig(t *testing.T) {
 	cfg, _, err := LoadConfig("config.json")
 	require.Nil(t, err)
 
-	if conn, err := connectToSMTPServer(cfg); err != nil {
+	if conn, err := ConnectToSMTPServer(cfg); err != nil {
 		t.Log(err)
 		t.Fatal("Should connect to the STMP Server")
 	} else {
-		if _, err1 := newSMTPClient(conn, cfg); err1 != nil {
+		if _, err1 := NewSMTPClient(conn, cfg); err1 != nil {
 			t.Log(err)
 			t.Fatal("Should get new smtp client")
 		}
@@ -27,7 +29,56 @@ func TestMailConnection(t *testing.T) {
 	cfg.EmailSettings.SMTPServer = "wrongServer"
 	cfg.EmailSettings.SMTPPort = "553"
 
-	if _, err := connectToSMTPServer(cfg); err == nil {
+	if _, err := ConnectToSMTPServer(cfg); err == nil {
+		t.Log(err)
+		t.Fatal("Should not to the STMP Server")
+	}
+}
+
+func TestMailConnectionAdvanced(t *testing.T) {
+	cfg, _, err := LoadConfig("config.json")
+	require.Nil(t, err)
+
+	if conn, err := ConnectToSMTPServerAdvanced(
+		&SmtpConnectionInfo{
+			ConnectionSecurity:   cfg.EmailSettings.ConnectionSecurity,
+			SkipCertVerification: *cfg.EmailSettings.SkipServerCertificateVerification,
+			SmtpServerName:       cfg.EmailSettings.SMTPServer,
+			SmtpServerHost:       cfg.EmailSettings.SMTPServer,
+			SmtpPort:             cfg.EmailSettings.SMTPPort,
+		},
+	); err != nil {
+		t.Log(err)
+		t.Fatal("Should connect to the STMP Server")
+	} else {
+		if _, err1 := NewSMTPClientAdvanced(
+			conn,
+			GetHostnameFromSiteURL(*cfg.ServiceSettings.SiteURL),
+			&SmtpConnectionInfo{
+				ConnectionSecurity:   cfg.EmailSettings.ConnectionSecurity,
+				SkipCertVerification: *cfg.EmailSettings.SkipServerCertificateVerification,
+				SmtpServerName:       cfg.EmailSettings.SMTPServer,
+				SmtpServerHost:       cfg.EmailSettings.SMTPServer,
+				SmtpPort:             cfg.EmailSettings.SMTPPort,
+				Auth:                 *cfg.EmailSettings.EnableSMTPAuth,
+				SmtpUsername:         cfg.EmailSettings.SMTPUsername,
+				SmtpPassword:         cfg.EmailSettings.SMTPPassword,
+			},
+		); err1 != nil {
+			t.Log(err)
+			t.Fatal("Should get new smtp client")
+		}
+	}
+
+	if _, err := ConnectToSMTPServerAdvanced(
+		&SmtpConnectionInfo{
+			ConnectionSecurity:   cfg.EmailSettings.ConnectionSecurity,
+			SkipCertVerification: *cfg.EmailSettings.SkipServerCertificateVerification,
+			SmtpServerName:       "wrongServer",
+			SmtpServerHost:       "wrongServer",
+			SmtpPort:             "553",
+		},
+	); err == nil {
 		t.Log(err)
 		t.Fatal("Should not to the STMP Server")
 	}
@@ -169,3 +220,62 @@ func TestSendMailUsingConfig(t *testing.T) {
 		}
 	}
 }*/
+
+func TestAuthMethods(t *testing.T) {
+	auth := &authChooser{
+		connectionInfo: &SmtpConnectionInfo{
+			SmtpUsername:   "test",
+			SmtpPassword:   "fakepass",
+			SmtpServerName: "fakeserver",
+			SmtpServerHost: "fakeserver",
+			SmtpPort:       "25",
+		},
+	}
+	tests := []struct {
+		desc   string
+		server *smtp.ServerInfo
+		err    string
+	}{
+		{
+			desc:   "auth PLAIN success",
+			server: &smtp.ServerInfo{Name: "fakeserver:25", Auth: []string{"PLAIN"}, TLS: true},
+		},
+		{
+			desc:   "auth PLAIN unencrypted connection fail",
+			server: &smtp.ServerInfo{Name: "fakeserver:25", Auth: []string{"PLAIN"}, TLS: false},
+			err:    "unencrypted connection",
+		},
+		{
+			desc:   "auth PLAIN wrong host name",
+			server: &smtp.ServerInfo{Name: "wrongServer:999", Auth: []string{"PLAIN"}, TLS: true},
+			err:    "wrong host name",
+		},
+		{
+			desc:   "auth LOGIN success",
+			server: &smtp.ServerInfo{Name: "fakeserver:25", Auth: []string{"LOGIN"}, TLS: true},
+		},
+		{
+			desc:   "auth LOGIN unencrypted connection fail",
+			server: &smtp.ServerInfo{Name: "wrongServer:999", Auth: []string{"LOGIN"}, TLS: true},
+			err:    "wrong host name",
+		},
+		{
+			desc:   "auth LOGIN wrong host name",
+			server: &smtp.ServerInfo{Name: "fakeserver:25", Auth: []string{"LOGIN"}, TLS: false},
+			err:    "unencrypted connection",
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			_, _, err := auth.Start(test.server)
+			got := ""
+			if err != nil {
+				got = err.Error()
+			}
+			if got != test.err {
+				t.Errorf("%d. got error = %q; want %q", i, got, test.err)
+			}
+		})
+	}
+}

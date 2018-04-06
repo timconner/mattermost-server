@@ -344,6 +344,45 @@ func TestGetExplicitMentions(t *testing.T) {
 				ChannelMentioned: true,
 			},
 		},
+
+		// The following tests cover cases where the message mentions @user.name, so we shouldn't assume that
+		// the user might be intending to mention some @user that isn't in the channel.
+		"Don't include potential mention that's part of an actual mention (without trailing period)": {
+			Message:  "this is an message for @user.name",
+			Keywords: map[string][]string{"@user.name": {id1}},
+			Expected: &ExplicitMentions{
+				MentionedUserIds: map[string]bool{
+					id1: true,
+				},
+			},
+		},
+		"Don't include potential mention that's part of an actual mention (with trailing period)": {
+			Message:  "this is an message for @user.name.",
+			Keywords: map[string][]string{"@user.name": {id1}},
+			Expected: &ExplicitMentions{
+				MentionedUserIds: map[string]bool{
+					id1: true,
+				},
+			},
+		},
+		"Don't include potential mention that's part of an actual mention (with multiple trailing periods)": {
+			Message:  "this is an message for @user.name...",
+			Keywords: map[string][]string{"@user.name": {id1}},
+			Expected: &ExplicitMentions{
+				MentionedUserIds: map[string]bool{
+					id1: true,
+				},
+			},
+		},
+		"Don't include potential mention that's part of an actual mention (containing and followed by multiple periods)": {
+			Message:  "this is an message for @user...name...",
+			Keywords: map[string][]string{"@user...name": {id1}},
+			Expected: &ExplicitMentions{
+				MentionedUserIds: map[string]bool{
+					id1: true,
+				},
+			},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			m := GetExplicitMentions(tc.Message, tc.Keywords)
@@ -781,6 +820,14 @@ func TestDoesNotifyPropsAllowPushNotification(t *testing.T) {
 	}
 
 	if DoesNotifyPropsAllowPushNotification(user, channelNotifyProps, post, true) {
+		t.Fatal("Should have returned false")
+	}
+
+	// WHEN default is ALL and channel is MUTED
+	userNotifyProps[model.PUSH_NOTIFY_PROP] = model.USER_NOTIFY_ALL
+	user.NotifyProps = userNotifyProps
+	channelNotifyProps[model.MARK_UNREAD_NOTIFY_PROP] = model.CHANNEL_MARK_UNREAD_MENTION
+	if DoesNotifyPropsAllowPushNotification(user, channelNotifyProps, post, false) {
 		t.Fatal("Should have returned false")
 	}
 }

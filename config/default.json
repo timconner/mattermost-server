@@ -47,7 +47,7 @@
         "RestrictCustomEmojiCreation": "all",
         "RestrictPostDelete": "all",
         "AllowEditPost": "always",
-        "PostEditTimeLimit": 300,
+        "PostEditTimeLimit": -1,
         "ExperimentalEnableAuthenticationTransfer": true,
         "TimeBetweenUserTypingUpdatesMilliseconds": 5000,
         "EnablePostSearch": true,
@@ -91,6 +91,9 @@
         "TeammateNameDisplay": "username",
         "ExperimentalTownSquareIsReadOnly": false,
         "ExperimentalPrimaryTeam": ""
+    },
+    "DisplaySettings": {
+        "ExperimentalTimezone": false
     },
     "ClientRequirements": {
         "AndroidLatestVersion": "",
@@ -211,6 +214,9 @@
         "AllowCustomThemes": true,
         "AllowedThemes": []
     },
+    "TimezoneSettings": {
+        "SupportedTimezonesPath": "timezones.json"
+    },
     "GitLabSettings": {
         "Enable": false,
         "Secret": "",
@@ -282,6 +288,8 @@
         "IdpUrl": "",
         "IdpDescriptorUrl": "",
         "AssertionConsumerServiceURL": "",
+        "ScopingIDPProviderId": "",
+        "ScopingIDPName": "",
         "IdpCertificateFile": "",
         "PublicCertificateFile": "",
         "PrivateKeyFile": "",
@@ -358,7 +366,13 @@
         "DailyRunTime": "01:00",
         "ExportFromTimestamp": 0,
         "FileLocation": "export",
-        "BatchSize": 10000
+        "BatchSize": 10000,
+        "GlobalRelaySettings": {
+            "CustomerType": "A9",
+            "SmtpUsername": "",
+            "SmtpPassword": "",
+            "EmailAddress": ""
+        }
     },
     "JobSettings": {
         "RunJobs": true,

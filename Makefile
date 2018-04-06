@@ -1,4 +1,4 @@
-.PHONY: build package run stop run-client run-server stop-client stop-server restart restart-server restart-client start-docker clean-dist clean nuke check-style check-client-style check-server-style check-unit-tests test dist setup-mac prepare-enteprise run-client-tests setup-run-client-tests cleanup-run-client-tests test-client build-linux build-osx build-windows package-common package-linux package-osx package-windows internal-test-web-client vet run-server-for-web-client-tests
+.PHONY: build package run stop run-client run-server stop-client stop-server restart restart-server restart-client start-docker clean-dist clean nuke check-style check-client-style check-server-style check-unit-tests test dist setup-mac prepare-enteprise run-client-tests setup-run-client-tests cleanup-run-client-tests test-client build-linux build-osx build-windows internal-test-web-client vet run-server-for-web-client-tests
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
@@ -56,7 +56,7 @@ GO_LINKER_FLAGS ?= -ldflags \
 # GOOS/GOARCH of the build host, used to determine whether we're cross-compiling or not
 BUILDER_GOOS_GOARCH="$(shell $(GO) env GOOS)_$(shell $(GO) env GOARCH)"
 
-PLATFORM_FILES=$(shell ls -1 ./cmd/platform/*.go | grep -v _test.go)
+PLATFORM_FILES="./main.go"
 
 # Output paths
 DIST_ROOT=dist
@@ -118,7 +118,7 @@ start-docker: ## Starts the docker containers for local development.
 
 	@if [ $(shell docker ps -a | grep -ci mattermost-inbucket) -eq 0 ]; then \
 		echo starting mattermost-inbucket; \
-		docker run --name mattermost-inbucket -p 9000:10080 -p 2500:10025 -d jhillyerd/inbucket:latest > /dev/null; \
+		docker run --name mattermost-inbucket -p 9000:10080 -p 2500:10025 -d jhillyerd/inbucket:release-1.2.0 > /dev/null; \
 	elif [ $(shell docker ps | grep -ci mattermost-inbucket) -eq 0 ]; then \
 		echo restarting mattermost-inbucket; \
 		docker start mattermost-inbucket > /dev/null; \
@@ -336,6 +336,7 @@ ifeq ($(BUILD_ENTERPRISE_READY),true)
 endif
 
 test-server-race: test-te-race test-ee-race ## Checks for race conditions.
+	find . -type d -name data -not -path './vendor/*' | xargs rm -rf
 
 do-cover-file: ## Creates the test coverage report file.
 	@echo "mode: count" > cover.out
@@ -360,6 +361,7 @@ ifeq ($(BUILD_ENTERPRISE_READY),true)
 endif
 
 test-server: test-te test-ee ## Runs tests.
+	find . -type d -name data -not -path './vendor/*' | xargs rm -rf
 
 internal-test-web-client: ## Runs web client tests.
 	$(GO) run $(GOFLAGS) $(PLATFORM_FILES) test web_client_tests
@@ -384,10 +386,10 @@ test-data: start-docker ## Add test data to the local instance.
 	$(GO) run $(GOFLAGS) $(GO_LINKER_FLAGS) $(PLATFORM_FILES) sampledata -w 1
 
 	@echo You may need to restart the Mattermost server before using the following
-	@echo ====================================================================================
-	@echo Login with a system admin account email=user-0@sample.mattermost.com password=user-0
-	@echo Login with a regular account email=user-1@sample.mattermost.com password=user-1
-	@echo ====================================================================================
+	@echo ========================================================================
+	@echo Login with a system admin account username=sysadmin password=sysadmin
+	@echo Login with a regular account username=user-1 password=user-1
+	@echo ========================================================================
 
 run-server: start-docker ## Starts the server.
 	@echo Running mattermost for development
@@ -477,7 +479,7 @@ clean: stop-docker ## Clean up everything except persistant server data.
 
 	cd $(BUILD_WEBAPP_DIR) && $(MAKE) clean
 
-	find . -type d -name data -not -path './vendor/*' | xargs rm -r
+	find . -type d -name data -not -path './vendor/*' | xargs rm -rf
 	rm -rf logs
 
 	rm -f mattermost.log

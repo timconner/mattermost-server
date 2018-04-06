@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"net/url"
 	"runtime/debug"
+	"strconv"
 	"strings"
 
 	l4g "github.com/alecthomas/log4go"
@@ -34,6 +35,7 @@ func (a *App) UpdateConfig(f func(*model.Config)) {
 	updated := old.Clone()
 	f(updated)
 	a.config.Store(updated)
+
 	a.InvokeConfigListeners(old, updated)
 }
 
@@ -52,6 +54,7 @@ func (a *App) LoadConfig(configFile string) *model.AppError {
 	a.configFile = configPath
 
 	utils.ConfigureLog(&cfg.LogSettings)
+	l4g.Info("Using config file at %s", configPath)
 
 	a.config.Store(cfg)
 
@@ -268,4 +271,19 @@ func (a *App) GetCookieDomain() string {
 
 func (a *App) GetSiteURL() string {
 	return a.siteURL
+}
+
+// ClientConfigWithComputed gets the configuration in a format suitable for sending to the client.
+func (a *App) ClientConfigWithComputed() map[string]string {
+	respCfg := map[string]string{}
+	for k, v := range a.ClientConfig() {
+		respCfg[k] = v
+	}
+
+	// These properties are not configurable, but nevertheless represent configuration expected
+	// by the client.
+	respCfg["NoAccounts"] = strconv.FormatBool(a.IsFirstUserAccount())
+	respCfg["MaxPostSize"] = strconv.Itoa(a.MaxPostSize())
+
+	return respCfg
 }

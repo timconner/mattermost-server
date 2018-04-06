@@ -5,15 +5,16 @@ package web
 
 import (
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/avct/uasurfer"
 
 	l4g "github.com/alecthomas/log4go"
 	"github.com/mattermost/mattermost-server/api"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/utils"
-	"github.com/mssola/user_agent"
 )
 
 func Init(api3 *api.API) {
@@ -65,26 +66,27 @@ func pluginHandler(config model.ConfigFunc, handler http.Handler) http.Handler {
 	})
 }
 
-var browsersNotSupported string = "MSIE/8;MSIE/9;MSIE/10;Internet Explorer/8;Internet Explorer/9;Internet Explorer/10;Safari/7;Safari/8"
+// Due to the complexities of UA detection and the ramifications of a misdetection only older Safari and IE browsers throw incompatibility errors.
 
-func CheckBrowserCompatability(c *api.Context, r *http.Request) bool {
-	ua := user_agent.New(r.UserAgent())
-	bname, bversion := ua.Browser()
+// Map should be of minimum required browser version.
+var browserMinimumSupported = map[string]int{
+	"BrowserIE":     11,
+	"BrowserSafari": 9,
+}
 
-	browsers := strings.Split(browsersNotSupported, ";")
-	for _, browser := range browsers {
-		version := strings.Split(browser, "/")
+func CheckClientCompatability(agentString string) bool {
+	ua := uasurfer.Parse(agentString)
 
-		if strings.HasPrefix(bname, version[0]) && strings.HasPrefix(bversion, version[1]) {
-			return false
-		}
+	if version, exist := browserMinimumSupported[ua.Browser.Name.String()]; exist && ua.Browser.Version.Major < version {
+		return false
 	}
 
 	return true
 }
 
 func root(c *api.Context, w http.ResponseWriter, r *http.Request) {
-	if !CheckBrowserCompatability(c, r) {
+
+	if !CheckClientCompatability(r.UserAgent()) {
 		w.Header().Set("Cache-Control", "no-store")
 		page := utils.NewHTMLTemplate(c.App.HTMLTemplates(), "unsupported_browser")
 		page.Props["Title"] = c.T("web.error.unsupported_browser.title")
@@ -101,5 +103,5 @@ func root(c *api.Context, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache, max-age=31556926, public")
 
 	staticDir, _ := utils.FindDir(model.CLIENT_DIR)
-	http.ServeFile(w, r, staticDir+"root.html")
+	http.ServeFile(w, r, filepath.Join(staticDir, "root.html"))
 }

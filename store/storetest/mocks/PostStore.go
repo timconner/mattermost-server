@@ -61,6 +61,11 @@ func (_m *PostStore) AnalyticsUserCountsWithPostsByDay(teamId string) store.Stor
 	return r0
 }
 
+// ClearCaches provides a mock function with given fields:
+func (_m *PostStore) ClearCaches() {
+	_m.Called()
+}
+
 // Delete provides a mock function with given fields: postId, time
 func (_m *PostStore) Delete(postId string, time int64) store.StoreChannel {
 	ret := _m.Called(postId, time)
@@ -409,6 +414,21 @@ func (_m *PostStore) Update(newPost *model.Post, oldPost *model.Post) store.Stor
 	var r0 store.StoreChannel
 	if rf, ok := ret.Get(0).(func(*model.Post, *model.Post) store.StoreChannel); ok {
 		r0 = rf(newPost, oldPost)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(store.StoreChannel)
+		}
+	}
+
+	return r0
+}
+
+func (_m *PostStore) GetMaxPostSize() store.StoreChannel {
+	ret := _m.Called()
+
+	var r0 store.StoreChannel
+	if rf, ok := ret.Get(0).(func() store.StoreChannel); ok {
+		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(store.StoreChannel)

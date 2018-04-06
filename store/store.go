@@ -61,6 +61,7 @@ type Store interface {
 	Status() StatusStore
 	FileInfo() FileInfoStore
 	Reaction() ReactionStore
+	Role() RoleStore
 	Job() JobStore
 	UserAccessToken() UserAccessTokenStore
 	ChannelMemberHistory() ChannelMemberHistoryStore
@@ -103,6 +104,7 @@ type TeamStore interface {
 	RemoveMember(teamId string, userId string) StoreChannel
 	RemoveAllMembersByTeam(teamId string) StoreChannel
 	RemoveAllMembersByUser(userId string) StoreChannel
+	UpdateLastTeamIconUpdate(teamId string, curTime int64) StoreChannel
 }
 
 type ChannelStore interface {
@@ -152,7 +154,6 @@ type ChannelStore interface {
 	UpdateLastViewedAt(channelIds []string, userId string) StoreChannel
 	IncrementMentionCount(channelId string, userId string) StoreChannel
 	AnalyticsTypeCount(teamId string, channelType string) StoreChannel
-	ExtraUpdateByUser(userId string, time int64) StoreChannel
 	GetMembersForUser(teamId string, userId string) StoreChannel
 	AutocompleteInTeam(teamId string, term string) StoreChannel
 	SearchInTeam(teamId string, term string) StoreChannel
@@ -160,6 +161,7 @@ type ChannelStore interface {
 	GetMembersByIds(channelId string, userIds []string) StoreChannel
 	AnalyticsDeletedTypeCount(teamId string, channelType string) StoreChannel
 	GetChannelUnread(channelId, userId string) StoreChannel
+	ClearCaches()
 }
 
 type ChannelMemberHistoryStore interface {
@@ -189,6 +191,7 @@ type PostStore interface {
 	AnalyticsUserCountsWithPostsByDay(teamId string) StoreChannel
 	AnalyticsPostCountsByDay(teamId string) StoreChannel
 	AnalyticsPostCount(teamId string, mustHaveFile bool, mustHaveHashtag bool) StoreChannel
+	ClearCaches()
 	InvalidateLastPostTimeCache(channelId string)
 	GetPostsCreatedAt(channelId string, time int64) StoreChannel
 	Overwrite(post *model.Post) StoreChannel
@@ -196,6 +199,7 @@ type PostStore interface {
 	GetPostsBatchForIndexing(startTime int64, endTime int64, limit int) StoreChannel
 	PermanentDeleteBatch(endTime int64, limit int64) StoreChannel
 	GetOldest() StoreChannel
+	GetMaxPostSize() StoreChannel
 }
 
 type UserStore interface {
@@ -209,9 +213,11 @@ type UserStore interface {
 	UpdateMfaActive(userId string, active bool) StoreChannel
 	Get(id string) StoreChannel
 	GetAll() StoreChannel
+	ClearCaches()
 	InvalidateProfilesInChannelCacheByUser(userId string)
 	InvalidateProfilesInChannelCache(channelId string)
 	GetProfilesInChannel(channelId string, offset int, limit int) StoreChannel
+	GetProfilesInChannelByStatus(channelId string, offset int, limit int) StoreChannel
 	GetAllProfilesInChannel(channelId string, allowFromCache bool) StoreChannel
 	GetProfilesNotInChannel(teamId string, channelId string, offset int, limit int) StoreChannel
 	GetProfilesWithoutTeam(offset int, limit int) StoreChannel
@@ -342,6 +348,7 @@ type WebhookStore interface {
 	AnalyticsIncomingCount(teamId string) StoreChannel
 	AnalyticsOutgoingCount(teamId string) StoreChannel
 	InvalidateWebhookCache(webhook string)
+	ClearCaches()
 }
 
 type CommandStore interface {
@@ -419,6 +426,7 @@ type FileInfoStore interface {
 	DeleteForPost(postId string) StoreChannel
 	PermanentDelete(fileId string) StoreChannel
 	PermanentDeleteBatch(endTime int64, limit int64) StoreChannel
+	ClearCaches()
 }
 
 type ReactionStore interface {
@@ -461,4 +469,11 @@ type PluginStore interface {
 	SaveOrUpdate(keyVal *model.PluginKeyValue) StoreChannel
 	Get(pluginId, key string) StoreChannel
 	Delete(pluginId, key string) StoreChannel
+}
+
+type RoleStore interface {
+	Save(role *model.Role) StoreChannel
+	Get(roleId string) StoreChannel
+	GetByName(name string) StoreChannel
+	GetByNames(names []string) StoreChannel
 }

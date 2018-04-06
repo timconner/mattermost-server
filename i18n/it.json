@@ -108,6 +108,18 @@
     "translation": "Mattermost - Test delle impostazioni Email"
   },
   {
+    "id": "api.admin.test_s3.missing_s3_bucket",
+    "translation": "Bucket S3 richiesto"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_endpoint",
+    "translation": "Endpoint S3 richiesto"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_region",
+    "translation": "Region S3 richiesta"
+  },
+  {
     "id": "api.admin.upload_brand_image.array.app_error",
     "translation": "Lista vuota per il campo 'image' nella richiesta"
   },
@@ -318,6 +330,18 @@
   {
     "id": "api.channel.leave.left",
     "translation": "%v ha lasciato il canale."
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.create_post.error",
+    "translation": "Impossibile pubblicare la conversione del canale a messaggio privato"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.retrieve_user.error",
+    "translation": "Impossibile recuperare gli utenti durante la conversione del canale da pubblico a privato"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.updated_from",
+    "translation": "%s ha cambiato il canale da pubblico a privato"
   },
   {
     "id": "api.channel.post_update_channel_displayname_message_and_forget.create_post.error",
@@ -873,6 +897,38 @@
   {
     "id": "api.command_msg.success",
     "translation": "Messaggio inviato."
+  },
+  {
+    "id": "api.command_mute.desc",
+    "translation": "Disattiva le notifiche desktop, email e push per il canale corrente oppure per i canali specificati."
+  },
+  {
+    "id": "api.command_mute.error",
+    "translation": "Impossibile trovare il canale {{.Channel}}."
+  },
+  {
+    "id": "api.command_mute.hint",
+    "translation": "[canale]"
+  },
+  {
+    "id": "api.command_mute.name",
+    "translation": "silenzia"
+  },
+  {
+    "id": "api.command_mute.success_mute",
+    "translation": "Non riceverai ulteriori notifiche per {{.Channel}} fino a quando sarà silenziato."
+  },
+  {
+    "id": "api.command_mute.success_mute_direct_msg",
+    "translation": "Non riceverai notifiche per questo canale fino a quando sarà silenziato."
+  },
+  {
+    "id": "api.command_mute.success_unmute",
+    "translation": "{{.Channel}} non è più silenziato."
+  },
+  {
+    "id": "api.command_mute.success_unmute_direct_msg",
+    "translation": "Questo canale non è più silenziato."
   },
   {
     "id": "api.command_offline.desc",
@@ -1935,12 +1991,24 @@
     "translation": "Impossibile caricare la pubblicazione: errore durante l'invio dell'evento websocket per la reazione"
   },
   {
+    "id": "api.roles.patch_roles.license.error",
+    "translation": "La tua licenza attuale non supporta i permessi avanzati."
+  },
+  {
     "id": "api.saml.save_certificate.app_error",
     "translation": "Il certificato non è stato salvato correttamente."
   },
   {
     "id": "api.server.new_server.init.info",
     "translation": "Inizializzazione del server..."
+  },
+  {
+    "id": "api.server.start_server.forward80to443.disabled_while_using_lets_encrypt",
+    "translation": "Inolta 80 a 443 deve essere abilitato quando si utilizza LetsEncrypt"
+  },
+  {
+    "id": "api.server.start_server.forward80to443.enabled_but_listening_on_wrong_port",
+    "translation": "Impossibile inoltrare la porta 80 alla porta 443 mentre si è in ascolto sulla porta %s: disabilitare l'inoltro da 80 a 443 se si utilizza un server proxy"
   },
   {
     "id": "api.server.start_server.listening.info",
@@ -2331,6 +2399,50 @@
     "translation": "%v è stato rimosso dal gruppo."
   },
   {
+    "id": "api.team.set_team_icon.array.app_error",
+    "translation": "La richiesta contiene una lista vuota nel campo 'image'"
+  },
+  {
+    "id": "api.team.set_team_icon.decode.app_error",
+    "translation": "Impossibile decodificare l'icona del gruppo"
+  },
+  {
+    "id": "api.team.set_team_icon.decode_config.app_error",
+    "translation": "Impossibile decodificare i metadati dell'icona del gruppo"
+  },
+  {
+    "id": "api.team.set_team_icon.encode.app_error",
+    "translation": "Impossibile codificare l'icona del gruppo"
+  },
+  {
+    "id": "api.team.set_team_icon.get_team.app_error",
+    "translation": "Si è verificato un errore recuperando il gruppo"
+  },
+  {
+    "id": "api.team.set_team_icon.no_file.app_error",
+    "translation": "La richiesta non contiene file nel campo 'image'"
+  },
+  {
+    "id": "api.team.set_team_icon.open.app_error",
+    "translation": "Impossibile aprire il file immagine"
+  },
+  {
+    "id": "api.team.set_team_icon.parse.app_error",
+    "translation": "Errore durante l'analisi della form multipart"
+  },
+  {
+    "id": "api.team.set_team_icon.storage.app_error",
+    "translation": "Impossibile caricare l'icona del gruppo. Lo spazio di archiviazione delle immagini non è configurato."
+  },
+  {
+    "id": "api.team.set_team_icon.too_large.app_error",
+    "translation": "Impossibile caricare l'icona del gruppo. Il file è troppo grande."
+  },
+  {
+    "id": "api.team.set_team_icon.write_file.app_error",
+    "translation": "Impossibile salvare l'icona del gruppo"
+  },
+  {
     "id": "api.team.signup_team.email_disabled.app_error",
     "translation": "L'iscrizione al gruppo con email è disabilitata."
   },
@@ -2716,10 +2828,6 @@
   },
   {
     "id": "api.user.create_user.signup_link_invalid.app_error",
-    "translation": "Il collegamento per l'iscrizione non sembra essere valido"
-  },
-  {
-    "id": "api.user.create_user.signup_link_mismatched_invite_id.app_error",
     "translation": "Il collegamento per l'iscrizione non sembra essere valido"
   },
   {
@@ -3647,6 +3755,10 @@
     "translation": "Impossibile attivare il plugin estratto. Il plugin può essere già disponibile e dev'essere attivato."
   },
   {
+    "id": "app.plugin.cluster.save_config.app_error",
+    "translation": "La configurazione del plugin nel file config.json deve essere aggiornata manualmente se si utilizza ReadOnlyConfig con il clustering abilitato."
+  },
+  {
     "id": "app.plugin.config.app_error",
     "translation": "Errore durante il salvataggio della configurazione del plugin"
   },
@@ -3707,8 +3819,24 @@
     "translation": "I plugin e/o il caricamento dei plugin è stato disattivato."
   },
   {
+    "id": "app.role.check_roles_exist.role_not_found",
+    "translation": "Il ruolo fornito non esiste"
+  },
+  {
     "id": "app.team.join_user_to_team.max_accounts.app_error",
     "translation": "Questo gruppo ha raggiunto il limite massimo di utenti ammessi. Contatta il tuo amministratore di sistema per innalzare il limite."
+  },
+  {
+    "id": "app.timezones.failed_deserialize.app_error",
+    "translation": "Errore durante la deserializzazione del file di configurazione della Timezone file={{.Filename}}, err={{.Error}}"
+  },
+  {
+    "id": "app.timezones.load_config.app_error",
+    "translation": "Il file di configurazione della Timezone non esiste file={{.Filename}}"
+  },
+  {
+    "id": "app.timezones.read_config.app_error",
+    "translation": "Errore durante la lettura del file di configurazione della Timezone file={{.Filename}}, err={{.Error}}"
   },
   {
     "id": "app.user_access_token.disabled",
@@ -4467,6 +4595,10 @@
     "translation": "Valore email della notifica non valido"
   },
   {
+    "id": "model.channel_member.is_valid.mute_value.app_error",
+    "translation": "Valore silenzioso non valido"
+  },
+  {
     "id": "model.channel_member.is_valid.notify_level.app_error",
     "translation": "Livello di notifica non valido"
   },
@@ -4907,12 +5039,36 @@
     "translation": "ExportFormat del lavoro di esportazione messaggi deve essere 'actianve' oppure 'globalrelay'"
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "ExportFormat del lavoro di esportazione messaggi deve essere 'actianve' oppure 'globalrelay'"
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "Lavoro esportazione messaggi il valore FileLocation deve essere una cartella accessibile in scrittura in cui verranno salvati i dati esportati"
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "Lavoro esportazione messaggi il valore FileLocation deve essere una sottocartella di FileSettings.Directory"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.config_missing.app_error",
+    "translation": "La variabile ExportFormat del lavoro di esportazione messaggi è impostata su 'globalrelay', ma l'impostazione GlobalRelaySettings manca"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.customer_type.app_error",
+    "translation": "Impostazione GlobalRelaySettings dell'esportazione messaggio. CustomerType deve essere 'A9' oppure 'A10'"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.email_address.app_error",
+    "translation": "Impostazione GlobalRelaySettings del lavoro di esportazione messaggio. EmailAddress deve essere un indirizzo email valido"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_password.app_error",
+    "translation": "mpostazione GlobalRelaySettings del lavoro di esportazione messaggio. SmtpPassword dev'essere impostato"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_username.app_error",
+    "translation": "mpostazione GlobalRelaySettings del lavoro di esportazione messaggio. SmtpUsername dev'essere impostato"
   },
   {
     "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
@@ -6343,6 +6499,18 @@
     "translation": "Non è stato possibile selezionare le pubblicazioni da eliminare per l'utente (troppe pubblicazioni), per favore rilancia"
   },
   {
+    "id": "store.sql_post.query_max_post_size.error",
+    "translation": "Impossibile determinare la dimensione massima supportata per le pubblicazioni"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.max_post_size_bytes",
+    "translation": "Post.Message supporta al massimo %d caratteri (%d bytes)"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.unrecognized_driver",
+    "translation": "Nessuna implementazione trovata per determinare la dimensione massima supportata per le pubblicazioni"
+  },
+  {
     "id": "store.sql_post.save.app_error",
     "translation": "Non è stato possibile salvare la pubblicazione"
   },
@@ -6469,6 +6637,30 @@
   {
     "id": "store.sql_reaction.save.save.app_error",
     "translation": "Impossibile salvare la reazione"
+  },
+  {
+    "id": "store.sql_role.get.app_error",
+    "translation": "Impossibile recuperare il ruolo"
+  },
+  {
+    "id": "store.sql_role.get_by_name.app_error",
+    "translation": "Impossibile recuperare il ruolo"
+  },
+  {
+    "id": "store.sql_role.get_by_names.app_error",
+    "translation": "Impossibile recuperare i ruoli"
+  },
+  {
+    "id": "store.sql_role.save.insert.app_error",
+    "translation": "Impossibile salvare il nuovo ruolo"
+  },
+  {
+    "id": "store.sql_role.save.invalid_role.app_error",
+    "translation": "Il ruolo non è valido"
+  },
+  {
+    "id": "store.sql_role.save.update.app_error",
+    "translation": "Impossibile aggiornare il ruolo"
   },
   {
     "id": "store.sql_session.analytics_session_count.app_error",

@@ -108,6 +108,18 @@
     "translation": "Mattermost - 電子メール設定のテスト"
   },
   {
+    "id": "api.admin.test_s3.missing_s3_bucket",
+    "translation": "S3バケット名が必要です"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_endpoint",
+    "translation": "S3エンドポイントが必要です"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_region",
+    "translation": "S3リージョンが必要です"
+  },
+  {
     "id": "api.admin.upload_brand_image.array.app_error",
     "translation": "リクエストの'image'以下の配列が空です"
   },
@@ -318,6 +330,18 @@
   {
     "id": "api.channel.leave.left",
     "translation": "%v がチャンネルから脱退しました。"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.create_post.error",
+    "translation": "チャンネル変更を非公開メッセージとして投稿できませんでした"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.retrieve_user.error",
+    "translation": "公開チャンネルを非公開チャンネルに変更する際にユーザーを取得できませんでした"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.updated_from",
+    "translation": "%s がチャンネルを公開から非公開に変更しました"
   },
   {
     "id": "api.channel.post_update_channel_displayname_message_and_forget.create_post.error",
@@ -873,6 +897,38 @@
   {
     "id": "api.command_msg.success",
     "translation": "ユーザーにメッセージを送信しました。"
+  },
+  {
+    "id": "api.command_mute.desc",
+    "translation": "現在のチャンネルか指定された [チャンネル] のデスクトップ、電子メール、プッシュ通知をオフにします"
+  },
+  {
+    "id": "api.command_mute.error",
+    "translation": "チャンネル {{.Channel}} が見つかりませんでした。"
+  },
+  {
+    "id": "api.command_mute.hint",
+    "translation": "[チャンネル]"
+  },
+  {
+    "id": "api.command_mute.name",
+    "translation": "ミュート"
+  },
+  {
+    "id": "api.command_mute.success_mute",
+    "translation": "チャンネルミュートがオフになるまで {{.Channel}} の通知を受け取らなくなります。"
+  },
+  {
+    "id": "api.command_mute.success_mute_direct_msg",
+    "translation": "チャンネルミュートがオフになるまで、このチャンネルの通知を受け取らなくなります。"
+  },
+  {
+    "id": "api.command_mute.success_unmute",
+    "translation": "{{.Channel}} のミュートはオフになっています。"
+  },
+  {
+    "id": "api.command_mute.success_unmute_direct_msg",
+    "translation": "このチャンネルのミュートはオフになっています。"
   },
   {
     "id": "api.command_offline.desc",
@@ -1935,12 +1991,24 @@
     "translation": "リアクションに対するウェブソケットイベントを送信する際に、投稿を取得することができませんでした"
   },
   {
+    "id": "api.roles.patch_roles.license.error",
+    "translation": "現在のライセンスは高度な権限をサポートしていません。"
+  },
+  {
     "id": "api.saml.save_certificate.app_error",
     "translation": "証明書が正常に保存されませんでした。"
   },
   {
     "id": "api.server.new_server.init.info",
     "translation": "サーバーを初期化しています…"
+  },
+  {
+    "id": "api.server.start_server.forward80to443.disabled_while_using_lets_encrypt",
+    "translation": "LetsEncryptを使用する際は ポート80を443へ転送する を有効にしなければなりません"
+  },
+  {
+    "id": "api.server.start_server.forward80to443.enabled_but_listening_on_wrong_port",
+    "translation": "ポート %s で接続待ちをしているため、ポート80へのアクセスをポート443へ転送できません: プロキシサーバーを使用している場合、Forward80To443を無効にしてください"
   },
   {
     "id": "api.server.start_server.listening.info",
@@ -2331,6 +2399,50 @@
     "translation": "%v はチームから削除されました。"
   },
   {
+    "id": "api.team.set_team_icon.array.app_error",
+    "translation": "リクエストの'image'以下の配列が空です"
+  },
+  {
+    "id": "api.team.set_team_icon.decode.app_error",
+    "translation": "チームアイコンをデコードできませんでした"
+  },
+  {
+    "id": "api.team.set_team_icon.decode_config.app_error",
+    "translation": "チームアイコンメタデータをデコードできませんでした"
+  },
+  {
+    "id": "api.team.set_team_icon.encode.app_error",
+    "translation": "チームアイコンをエンコードできませんでした"
+  },
+  {
+    "id": "api.team.set_team_icon.get_team.app_error",
+    "translation": "チームの取得中にエラーが発生しました"
+  },
+  {
+    "id": "api.team.set_team_icon.no_file.app_error",
+    "translation": "リクエストの'image'以下にファイルがありません"
+  },
+  {
+    "id": "api.team.set_team_icon.open.app_error",
+    "translation": "画像ファイルを開けません"
+  },
+  {
+    "id": "api.team.set_team_icon.parse.app_error",
+    "translation": "マルチパートフォームを解析できませんでした"
+  },
+  {
+    "id": "api.team.set_team_icon.storage.app_error",
+    "translation": "チームアイコンをアップロードできません。画像ストレージが設定されていません。"
+  },
+  {
+    "id": "api.team.set_team_icon.too_large.app_error",
+    "translation": "チームアイコンをアップロードできません。ファイルが大き過ぎます。"
+  },
+  {
+    "id": "api.team.set_team_icon.write_file.app_error",
+    "translation": "チームアイコンを保存できませんでした"
+  },
+  {
     "id": "api.team.signup_team.email_disabled.app_error",
     "translation": "電子メールによるチームへの利用登録は無効です。"
   },
@@ -2716,10 +2828,6 @@
   },
   {
     "id": "api.user.create_user.signup_link_invalid.app_error",
-    "translation": "利用登録リンクが不正です"
-  },
-  {
-    "id": "api.user.create_user.signup_link_mismatched_invite_id.app_error",
     "translation": "利用登録リンクが不正です"
   },
   {
@@ -3647,6 +3755,10 @@
     "translation": "抽出されたプラグインを有効化できませんでした。プラグインが既に存在し、有効化されている可能性があります。"
   },
   {
+    "id": "app.plugin.cluster.save_config.app_error",
+    "translation": "クラスター化を有効にするとともにReadOnlyConfigを使用する際は、config.jsonファイルのプラグイン設定は手動で更新する必要があります。"
+  },
+  {
     "id": "app.plugin.config.app_error",
     "translation": "設定にプラグインの状態を保存する際にエラーが発生しました"
   },
@@ -3707,8 +3819,24 @@
     "translation": "プラグインのアップロードは無効化されています。"
   },
   {
+    "id": "app.role.check_roles_exist.role_not_found",
+    "translation": "指定された役割は存在しません。"
+  },
+  {
     "id": "app.team.join_user_to_team.max_accounts.app_error",
     "translation": "このチームは登録ユーザー数の上限に達しました。システム管理者に上限値を上げるよう依頼してください。"
+  },
+  {
+    "id": "app.timezones.failed_deserialize.app_error",
+    "translation": "タイムゾーン設定をデシリアライズできませんでした file={{.Filename}}, err={{.Error}}"
+  },
+  {
+    "id": "app.timezones.load_config.app_error",
+    "translation": "タイムゾーン設定ファイルが存在しません file={{.Filename}}"
+  },
+  {
+    "id": "app.timezones.read_config.app_error",
+    "translation": "タイムゾーン設定が読み込めませんでした file={{.Filename}}, err={{.Error}}"
   },
   {
     "id": "app.user_access_token.disabled",
@@ -4144,7 +4272,7 @@
   },
   {
     "id": "ent.metrics.stopping.info",
-    "translation": "メトリクスとプロファイリングのサーバーは%vで停止しています"
+    "translation": "%v のメトリクスとプロファイリング用のサーバーは停止しています"
   },
   {
     "id": "ent.mfa.activate.authenticate.app_error",
@@ -4465,6 +4593,10 @@
   {
     "id": "model.channel_member.is_valid.email_value.app_error",
     "translation": "電子メール通知の設定値が不正です"
+  },
+  {
+    "id": "model.channel_member.is_valid.mute_value.app_error",
+    "translation": "不正なミュートに関する値です"
   },
   {
     "id": "model.channel_member.is_valid.notify_level.app_error",
@@ -4907,12 +5039,36 @@
     "translation": "メッセージエクスポート処理の ExportFormat は 'actiance' か 'globalrelay' のいずれかでなくてはなりません"
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "メッセージエクスポート処理の ExportFormat は 'actiance' か 'globalrelay' のいずれかでなくてはなりません"
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "メッセーエクスポート処理の FileLocation はエクスポートデータが書き込まれる書き込み可能なディレクトリでなくてはなりません"
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "メッセージエクスポート処理の FileLocation は FileSettings.Directory のサブディレクトリでなくてはなりません"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.config_missing.app_error",
+    "translation": "メッセージエクスポート処理のExportFormatは 'globalrelay' に設定されていますが、GlobalRealySettingsが見つかりません。"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.customer_type.app_error",
+    "translation": "メッセージエクスポートのGlobalRelaySettings.CustomerTypeには 'A9' か 'A10' のいずれかを設定してください。"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.email_address.app_error",
+    "translation": "メッセージエクスポート処理の GlobalRelay.EmailAddress には有効な電子メールアドレスが設定されていなくてはなりません"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_password.app_error",
+    "translation": "メッセージエクスポート処理のGlobalRelaySettings.SmtpPasswordが設定されていなければなりません。"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_username.app_error",
+    "translation": "メッセージエクスポート処理のGlobalRelaySettings.SmtpUsernameが設定されていなくてはなりません。"
   },
   {
     "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
@@ -6343,6 +6499,18 @@
     "translation": "ユーザーの削除しようとする投稿を選択できませんでした(数が多過ぎます)。再度実行してください"
   },
   {
+    "id": "store.sql_post.query_max_post_size.error",
+    "translation": "投稿サイズの最大値を定義できません"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.max_post_size_bytes",
+    "translation": "Post.Message は最大 %d 文字(%d バイト)をサポートしています"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.unrecognized_driver",
+    "translation": "投稿サイズの最大値の定義が見つかりませんでした"
+  },
+  {
     "id": "store.sql_post.save.app_error",
     "translation": "投稿を保存できませんでした"
   },
@@ -6469,6 +6637,30 @@
   {
     "id": "store.sql_reaction.save.save.app_error",
     "translation": "リアクションを保存できません"
+  },
+  {
+    "id": "store.sql_role.get.app_error",
+    "translation": "役割を取得できませんでした"
+  },
+  {
+    "id": "store.sql_role.get_by_name.app_error",
+    "translation": "役割を取得できませんでした"
+  },
+  {
+    "id": "store.sql_role.get_by_names.app_error",
+    "translation": "役割を取得できませんでした"
+  },
+  {
+    "id": "store.sql_role.save.insert.app_error",
+    "translation": "新しい役割を保存できませんでした"
+  },
+  {
+    "id": "store.sql_role.save.invalid_role.app_error",
+    "translation": "役割が不正です。"
+  },
+  {
+    "id": "store.sql_role.save.update.app_error",
+    "translation": "役割を更新できませんでした"
   },
   {
     "id": "store.sql_session.analytics_session_count.app_error",

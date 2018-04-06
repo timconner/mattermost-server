@@ -200,6 +200,14 @@ func (a *App) createDirectChannel(userId string, otherUserId string) (*model.Cha
 		}
 	} else {
 		channel := result.Data.(*model.Channel)
+
+		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(userId, channel.Id, model.GetMillis()); result.Err != nil {
+			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+		}
+		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(otherUserId, channel.Id, model.GetMillis()); result.Err != nil {
+			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+		}
+
 		return channel, nil
 	}
 }
@@ -219,7 +227,7 @@ func (a *App) WaitForChannelMembership(channelId string, userId string) {
 				return
 			}
 
-			// If we recieved a error but it wasn't a missing channel member then return
+			// If we received a error but it wasn't a missing channel member then return
 			if result.Err.Id != store.MISSING_CHANNEL_MEMBER_ERROR {
 				return
 			}
@@ -344,7 +352,7 @@ func (a *App) postChannelPrivacyMessage(user *model.User, channel *model.Channel
 	})[channel.Type]
 	post := &model.Post{
 		ChannelId: channel.Id,
-		Message:   fmt.Sprintf(utils.T("api.channel.change_channel_privacy." + privacy)),
+		Message:   utils.T("api.channel.change_channel_privacy." + privacy),
 		Type:      model.POST_CHANGE_CHANNEL_PRIVACY,
 		UserId:    user.Id,
 		Props: model.StringInterface{
@@ -406,6 +414,10 @@ func (a *App) UpdateChannelMemberRoles(channelId string, userId string, newRoles
 		return nil, err
 	}
 
+	if err := a.CheckRolesExist(strings.Fields(newRoles)); err != nil {
+		return nil, err
+	}
+
 	member.Roles = newRoles
 
 	if result := <-a.Srv.Store.Channel().UpdateMember(member); result.Err != nil {
@@ -445,6 +457,10 @@ func (a *App) UpdateChannelMemberNotifyProps(data map[string]string, channelId s
 	} else {
 		a.InvalidateCacheForUser(userId)
 		a.InvalidateCacheForChannelMembersNotifyProps(channelId)
+		// Notify the clients that the member notify props changed
+		evt := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_CHANNEL_MEMBER_UPDATED, "", "", userId, nil)
+		evt.Add("channelMember", member.ToJson())
+		a.Publish(evt)
 		return member, nil
 	}
 }
@@ -520,7 +536,6 @@ func (a *App) DeleteChannel(channel *model.Channel, userId string) *model.AppErr
 
 		message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_CHANNEL_DELETED, channel.TeamId, "", "", nil)
 		message.Add("channel_id", channel.Id)
-
 		a.Publish(message)
 	}
 
@@ -767,6 +782,34 @@ func (a *App) PostUpdateChannelDisplayNameMessage(userId string, channel *model.
 
 		if _, err := a.CreatePost(post, channel, false); err != nil {
 			return model.NewAppError("PostUpdateChannelDisplayNameMessage", "api.channel.post_update_channel_displayname_message_and_forget.create_post.error", nil, err.Error(), http.StatusInternalServerError)
+		}
+	}
+
+	return nil
+}
+
+func (a *App) PostConvertChannelToPrivate(userId string, channel *model.Channel) *model.AppError {
+	uc := a.Srv.Store.User().Get(userId)
+
+	if uresult := <-uc; uresult.Err != nil {
+		return model.NewAppError("PostConvertChannelToPrivate", "api.channel.post_convert_channel_to_private.retrieve_user.error", nil, uresult.Err.Error(), http.StatusBadRequest)
+	} else {
+		user := uresult.Data.(*model.User)
+
+		message := fmt.Sprintf(utils.T("api.channel.post_convert_channel_to_private.updated_from"), user.Username)
+
+		post := &model.Post{
+			ChannelId: channel.Id,
+			Message:   message,
+			Type:      model.POST_CONVERT_CHANNEL,
+			UserId:    userId,
+			Props: model.StringInterface{
+				"username": user.Username,
+			},
+		}
+
+		if _, err := a.CreatePost(post, channel, false); err != nil {
+			return model.NewAppError("PostConvertChannelToPrivate", "api.channel.post_convert_channel_to_private.create_post.error", nil, err.Error(), http.StatusInternalServerError)
 		}
 	}
 
@@ -1030,7 +1073,7 @@ func (a *App) LeaveChannel(channelId string, userId string) *model.AppError {
 			return err
 		}
 
-		if channel.Name == model.DEFAULT_CHANNEL && *a.Config().ServiceSettings.ExperimentalEnableDefaultChannelLeaveJoinMessages == false {
+		if channel.Name == model.DEFAULT_CHANNEL && !*a.Config().ServiceSettings.ExperimentalEnableDefaultChannelLeaveJoinMessages {
 			return nil
 		}
 
@@ -1068,7 +1111,9 @@ func (a *App) PostAddToChannelMessage(user *model.User, addedUser *model.User, c
 		UserId:    user.Id,
 		RootId:    postRootId,
 		Props: model.StringInterface{
+			"userId":        user.Id,
 			"username":      user.Username,
+			"addedUserId":   addedUser.Id,
 			"addedUsername": addedUser.Username,
 		},
 	}
@@ -1088,7 +1133,9 @@ func (a *App) postAddToTeamMessage(user *model.User, addedUser *model.User, chan
 		UserId:    user.Id,
 		RootId:    postRootId,
 		Props: model.StringInterface{
+			"userId":        user.Id,
 			"username":      user.Username,
+			"addedUserId":   addedUser.Id,
 			"addedUsername": addedUser.Username,
 		},
 	}
@@ -1107,6 +1154,7 @@ func (a *App) postRemoveFromChannelMessage(removerUserId string, removedUser *mo
 		Type:      model.POST_REMOVE_FROM_CHANNEL,
 		UserId:    removerUserId,
 		Props: model.StringInterface{
+			"removedUserId":   removedUser.Id,
 			"removedUsername": removedUser.Username,
 		},
 	}
@@ -1141,17 +1189,13 @@ func (a *App) removeUserFromChannel(userIdToRemove string, removerUserId string,
 	message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_USER_REMOVED, "", channel.Id, "", nil)
 	message.Add("user_id", userIdToRemove)
 	message.Add("remover_id", removerUserId)
-	a.Go(func() {
-		a.Publish(message)
-	})
+	a.Publish(message)
 
 	// because the removed user no longer belongs to the channel we need to send a separate websocket event
 	userMsg := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_USER_REMOVED, "", "", userIdToRemove, nil)
 	userMsg.Add("channel_id", channel.Id)
 	userMsg.Add("remover_id", removerUserId)
-	a.Go(func() {
-		a.Publish(userMsg)
-	})
+	a.Publish(userMsg)
 
 	return nil
 }
@@ -1221,9 +1265,7 @@ func (a *App) UpdateChannelLastViewedAt(channelIds []string, userId string) *mod
 		for _, channelId := range channelIds {
 			message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_CHANNEL_VIEWED, "", "", userId, nil)
 			message.Add("channel_id", channelId)
-			a.Go(func() {
-				a.Publish(message)
-			})
+			a.Publish(message)
 		}
 	}
 
@@ -1300,9 +1342,7 @@ func (a *App) ViewChannel(view *model.ChannelView, userId string, clearPushNotif
 	if *a.Config().ServiceSettings.EnableChannelViewedMessages && model.IsValidId(view.ChannelId) {
 		message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_CHANNEL_VIEWED, "", "", userId, nil)
 		message.Add("channel_id", view.ChannelId)
-		a.Go(func() {
-			a.Publish(message)
-		})
+		a.Publish(message)
 	}
 
 	return times, nil
@@ -1405,9 +1445,31 @@ func (a *App) GetDirectChannel(userId1, userId2 string) (*model.Channel, *model.
 		}
 		a.InvalidateCacheForUser(userId1)
 		a.InvalidateCacheForUser(userId2)
-		return result.Data.(*model.Channel), nil
+
+		channel := result.Data.(*model.Channel)
+		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(userId1, channel.Id, model.GetMillis()); result.Err != nil {
+			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+		}
+		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(userId2, channel.Id, model.GetMillis()); result.Err != nil {
+			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+		}
+
+		return channel, nil
 	} else if result.Err != nil {
 		return nil, model.NewAppError("GetOrCreateDMChannel", "web.incoming_webhook.channel.app_error", nil, "err="+result.Err.Message, result.Err.StatusCode)
 	}
 	return result.Data.(*model.Channel), nil
+}
+
+func (a *App) ToggleMuteChannel(channelId string, userId string) *model.ChannelMember {
+	member := (<-a.Srv.Store.Channel().GetMember(channelId, userId)).Data.(*model.ChannelMember)
+
+	if member.NotifyProps[model.MARK_UNREAD_NOTIFY_PROP] == model.CHANNEL_NOTIFY_MENTION {
+		member.NotifyProps[model.MARK_UNREAD_NOTIFY_PROP] = model.CHANNEL_MARK_UNREAD_ALL
+	} else {
+		member.NotifyProps[model.MARK_UNREAD_NOTIFY_PROP] = model.CHANNEL_NOTIFY_MENTION
+	}
+
+	a.Srv.Store.Channel().UpdateMember(member)
+	return member
 }

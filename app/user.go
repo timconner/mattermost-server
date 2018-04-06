@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -34,7 +35,6 @@ const (
 	TOKEN_TYPE_PASSWORD_RECOVERY  = "password_recovery"
 	TOKEN_TYPE_VERIFY_EMAIL       = "verify_email"
 	PASSWORD_RECOVER_EXPIRY_TIME  = 1000 * 60 * 60 // 1 hour
-	VERIFY_EMAIL_EXPIRY_TIME      = 1000 * 60 * 60 // 1 hour
 	IMAGE_PROFILE_PIXEL_DIMENSION = 128
 )
 
@@ -202,9 +202,7 @@ func (a *App) CreateUser(user *model.User) (*model.User, *model.AppError) {
 		// This message goes to everyone, so the teamId, channelId and userId are irrelevant
 		message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_NEW_USER, "", "", "", nil)
 		message.Add("user_id", ruser.Id)
-		a.Go(func() {
-			a.Publish(message)
-		})
+		a.Publish(message)
 
 		return ruser, nil
 	}
@@ -508,6 +506,14 @@ func (a *App) GetUsersInChannel(channelId string, offset int, limit int) ([]*mod
 	}
 }
 
+func (a *App) GetUsersInChannelByStatus(channelId string, offset int, limit int) ([]*model.User, *model.AppError) {
+	if result := <-a.Srv.Store.User().GetProfilesInChannelByStatus(channelId, offset, limit); result.Err != nil {
+		return nil, result.Err
+	} else {
+		return result.Data.([]*model.User), nil
+	}
+}
+
 func (a *App) GetUsersInChannelMap(channelId string, offset int, limit int, asAdmin bool) (map[string]*model.User, *model.AppError) {
 	users, err := a.GetUsersInChannel(channelId, offset, limit)
 	if err != nil {
@@ -526,6 +532,15 @@ func (a *App) GetUsersInChannelMap(channelId string, offset int, limit int, asAd
 
 func (a *App) GetUsersInChannelPage(channelId string, page int, perPage int, asAdmin bool) ([]*model.User, *model.AppError) {
 	users, err := a.GetUsersInChannel(channelId, page*perPage, perPage)
+	if err != nil {
+		return nil, err
+	}
+
+	return a.sanitizeProfiles(users, asAdmin), nil
+}
+
+func (a *App) GetUsersInChannelPageByStatus(channelId string, page int, perPage int, asAdmin bool) ([]*model.User, *model.AppError) {
+	users, err := a.GetUsersInChannelByStatus(channelId, page*perPage, perPage)
 	if err != nil {
 		return nil, err
 	}
@@ -703,7 +718,7 @@ func CreateProfileImage(username string, userId string, initialFont string) ([]b
 	initial := string(strings.ToUpper(username)[0])
 
 	fontDir, _ := utils.FindDir("fonts")
-	fontBytes, err := ioutil.ReadFile(fontDir + initialFont)
+	fontBytes, err := ioutil.ReadFile(filepath.Join(fontDir, initialFont))
 	if err != nil {
 		return nil, model.NewAppError("CreateProfileImage", "api.user.create_profile_image.default_font.app_error", nil, err.Error(), http.StatusInternalServerError)
 	}
@@ -832,7 +847,6 @@ func (a *App) SetProfileImageFromFile(userId string, file multipart.File) *model
 
 		message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_USER_UPDATED, "", "", "", nil)
 		message.Add("user", user)
-
 		a.Publish(message)
 	}
 
@@ -901,10 +915,6 @@ func (a *App) UpdateActive(user *model.User, active bool) (*model.User, *model.A
 			}
 		}
 
-		if extra := <-a.Srv.Store.Channel().ExtraUpdateByUser(user.Id, model.GetMillis()); extra.Err != nil {
-			return nil, extra.Err
-		}
-
 		ruser := result.Data.([2]*model.User)[0]
 		options := a.Config().GetSanitizeOptions()
 		options["passwordupdate"] = false
@@ -930,6 +940,8 @@ func (a *App) UpdateActive(user *model.User, active bool) (*model.User, *model.A
 			}
 		}
 
+		a.sendUpdatedUserEvent(*ruser)
+
 		return ruser, nil
 	}
 }
@@ -950,7 +962,7 @@ func (a *App) UpdateUserAsUser(user *model.User, asAdmin bool) (*model.User, *mo
 		return nil, err
 	}
 
-	a.sendUpdatedUserEvent(*updatedUser, asAdmin)
+	a.sendUpdatedUserEvent(*updatedUser)
 
 	return updatedUser, nil
 }
@@ -968,7 +980,7 @@ func (a *App) PatchUser(userId string, patch *model.UserPatch, asAdmin bool) (*m
 		return nil, err
 	}
 
-	a.sendUpdatedUserEvent(*updatedUser, asAdmin)
+	a.sendUpdatedUserEvent(*updatedUser)
 
 	return updatedUser, nil
 }
@@ -997,14 +1009,12 @@ func (a *App) UpdateUserAuth(userId string, userAuth *model.UserAuth) (*model.Us
 	return userAuth, nil
 }
 
-func (a *App) sendUpdatedUserEvent(user model.User, asAdmin bool) {
-	a.SanitizeProfile(&user, asAdmin)
+func (a *App) sendUpdatedUserEvent(user model.User) {
+	a.SanitizeProfile(&user, false)
 
 	message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_USER_UPDATED, "", "", "", nil)
 	message.Add("user", user)
-	a.Go(func() {
-		a.Publish(message)
-	})
+	a.Publish(message)
 }
 
 func (a *App) UpdateUser(user *model.User, sendNotifications bool) (*model.User, *model.AppError) {
@@ -1228,6 +1238,10 @@ func (a *App) UpdateUserRoles(userId string, newRoles string, sendWebSocketEvent
 	var err *model.AppError
 	if user, err = a.GetUser(userId); err != nil {
 		err.StatusCode = http.StatusBadRequest
+		return nil, err
+	}
+
+	if err := a.CheckRolesExist(strings.Fields(newRoles)); err != nil {
 		return nil, err
 	}
 

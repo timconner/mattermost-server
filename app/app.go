@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -25,6 +26,8 @@ import (
 	"github.com/mattermost/mattermost-server/store/sqlstore"
 	"github.com/mattermost/mattermost-server/utils"
 )
+
+const ADVANCED_PERMISSIONS_MIGRATION_KEY = "AdvancedPermissionsMigrationComplete"
 
 type App struct {
 	goroutineCount      int32
@@ -63,13 +66,14 @@ type App struct {
 	clientLicenseValue atomic.Value
 	licenseListeners   map[string]func()
 
+	timezones atomic.Value
+
 	siteURL string
 
 	newStore func() store.Store
 
 	htmlTemplateWatcher  *utils.HTMLTemplateWatcher
 	sessionCache         *utils.Cache
-	roles                map[string]*model.Role
 	configListenerId     string
 	licenseListenerId    string
 	disableConfigWatch   bool
@@ -125,16 +129,34 @@ func New(options ...Option) (outApp *App, outErr error) {
 		return nil, err
 	}
 	app.EnableConfigWatch()
+
+	app.LoadTimezones()
+
 	if err := utils.InitTranslations(app.Config().LocalizationSettings); err != nil {
 		return nil, errors.Wrapf(err, "unable to load Mattermost translation files")
 	}
 
 	app.configListenerId = app.AddConfigListener(func(_, _ *model.Config) {
 		app.configOrLicenseListener()
+
+		message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_CONFIG_CHANGED, "", "", "", nil)
+
+		message.Add("config", app.ClientConfigWithComputed())
+		app.Go(func() {
+			app.Publish(message)
+		})
 	})
-	app.licenseListenerId = app.AddLicenseListener(app.configOrLicenseListener)
+	app.licenseListenerId = app.AddLicenseListener(func() {
+		app.configOrLicenseListener()
+
+		message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_LICENSE_CHANGED, "", "", "", nil)
+		message.Add("license", app.GetSanitizedClientLicense())
+		app.Go(func() {
+			app.Publish(message)
+		})
+
+	})
 	app.regenerateClientConfig()
-	app.setDefaultRolesBasedOnConfig()
 
 	l4g.Info(utils.T("api.server.new_server.init.info"))
 
@@ -175,7 +197,6 @@ func New(options ...Option) (outApp *App, outErr error) {
 
 func (a *App) configOrLicenseListener() {
 	a.regenerateClientConfig()
-	a.setDefaultRolesBasedOnConfig()
 }
 
 func (a *App) Shutdown() {
@@ -423,7 +444,11 @@ func (a *App) WaitForGoroutines() {
 }
 
 func (a *App) HTMLTemplates() *template.Template {
-	return a.htmlTemplateWatcher.Templates()
+	if a.htmlTemplateWatcher != nil {
+		return a.htmlTemplateWatcher.Templates()
+	}
+
+	return nil
 }
 
 func (a *App) HTTPClient(trustURLs bool) *http.Client {
@@ -469,4 +494,58 @@ func (a *App) Handle404(w http.ResponseWriter, r *http.Request) {
 	l4g.Debug("%v: code=404 ip=%v", r.URL.Path, utils.GetIpAddress(r))
 
 	utils.RenderWebAppError(w, r, err, a.AsymmetricSigningKey())
+}
+
+// This function migrates the default built in roles from code/config to the database.
+func (a *App) DoAdvancedPermissionsMigration() {
+	// If the migration is already marked as completed, don't do it again.
+	if result := <-a.Srv.Store.System().GetByName(ADVANCED_PERMISSIONS_MIGRATION_KEY); result.Err == nil {
+		return
+	}
+
+	l4g.Info("Migrating roles to database.")
+	roles := model.MakeDefaultRoles()
+	roles = utils.SetRolePermissionsFromConfig(roles, a.Config(), a.License() != nil)
+
+	allSucceeded := true
+
+	for _, role := range roles {
+		if result := <-a.Srv.Store.Role().Save(role); result.Err != nil {
+			// If this failed for reasons other than the role already existing, don't mark the migration as done.
+			if result2 := <-a.Srv.Store.Role().GetByName(role.Name); result2.Err != nil {
+				l4g.Critical("Failed to migrate role to database.")
+				l4g.Critical(result.Err)
+				allSucceeded = false
+			} else {
+				// If the role already existed, check it is the same and update if not.
+				fetchedRole := result.Data.(*model.Role)
+				if !reflect.DeepEqual(fetchedRole.Permissions, role.Permissions) ||
+					fetchedRole.DisplayName != role.DisplayName ||
+					fetchedRole.Description != role.Description ||
+					fetchedRole.SchemeManaged != role.SchemeManaged {
+					role.Id = fetchedRole.Id
+					if result := <-a.Srv.Store.Role().Save(role); result.Err != nil {
+						// Role is not the same, but failed to update.
+						l4g.Critical("Failed to migrate role to database.")
+						l4g.Critical(result.Err)
+						allSucceeded = false
+					}
+				}
+			}
+		}
+	}
+
+	if !allSucceeded {
+		return
+	}
+
+	system := model.System{
+		Name:  ADVANCED_PERMISSIONS_MIGRATION_KEY,
+		Value: "true",
+	}
+
+	if result := <-a.Srv.Store.System().Save(&system); result.Err != nil {
+		l4g.Critical("Failed to mark advanced permissions migration as completed.")
+		l4g.Critical(result.Err)
+	}
 }

@@ -54,6 +54,8 @@ func (a *App) GetSession(token string) (*model.Session, *model.AppError) {
 					a.AddSessionToCache(session)
 				}
 			}
+		} else if sessionResult.Err.StatusCode == http.StatusInternalServerError {
+			return nil, sessionResult.Err
 		}
 	}
 
@@ -138,6 +140,9 @@ func (a *App) ClearSessionCacheForUserSkipClusterSend(userId string) {
 			session := ts.(*model.Session)
 			if session.UserId == userId {
 				a.sessionCache.Remove(key)
+				if a.Metrics != nil {
+					a.Metrics.IncrementMemCacheInvalidationCounterSession()
+				}
 			}
 		}
 	}
@@ -222,7 +227,7 @@ func (a *App) UpdateLastActivityAtIfNeeded(session model.Session) {
 	}
 
 	if result := <-a.Srv.Store.Session().UpdateLastActivityAt(session.Id, now); result.Err != nil {
-		l4g.Error(utils.T("api.status.last_activity.error"), session.UserId, session.Id)
+		l4g.Error(utils.T("api.status.last_activity.error"), session.UserId, session.Id, result.Err)
 	}
 
 	session.LastActivityAt = now

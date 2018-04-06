@@ -108,6 +108,18 @@
     "translation": "Mattermost - Test des paramètres e-mail"
   },
   {
+    "id": "api.admin.test_s3.missing_s3_bucket",
+    "translation": "S3 Bucket is required"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_endpoint",
+    "translation": "S3 Endpoint is required"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_region",
+    "translation": "S3 Region is required"
+  },
+  {
     "id": "api.admin.upload_brand_image.array.app_error",
     "translation": "Aucune image transmise dans la requête"
   },
@@ -318,6 +330,18 @@
   {
     "id": "api.channel.leave.left",
     "translation": "%v a quitté le canal."
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.create_post.error",
+    "translation": "Failed to post channel conversion to private message"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.retrieve_user.error",
+    "translation": "Failed to retrieve user while converting the channel from public to private"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.updated_from",
+    "translation": "%s converted the channel from public to private"
   },
   {
     "id": "api.channel.post_update_channel_displayname_message_and_forget.create_post.error",
@@ -873,6 +897,38 @@
   {
     "id": "api.command_msg.success",
     "translation": "Message envoyé."
+  },
+  {
+    "id": "api.command_mute.desc",
+    "translation": "Turns off desktop, email and push notifications for the current channel or the [channel] specified."
+  },
+  {
+    "id": "api.command_mute.error",
+    "translation": "Could not find the channel {{.Channel}}."
+  },
+  {
+    "id": "api.command_mute.hint",
+    "translation": "[channel]"
+  },
+  {
+    "id": "api.command_mute.name",
+    "translation": "mute"
+  },
+  {
+    "id": "api.command_mute.success_mute",
+    "translation": "You will not receive notifications for {{.Channel}} until channel mute is turned off."
+  },
+  {
+    "id": "api.command_mute.success_mute_direct_msg",
+    "translation": "You will not receive notifications for this channel until channel mute is turned off."
+  },
+  {
+    "id": "api.command_mute.success_unmute",
+    "translation": "{{.Channel}} is no longer muted."
+  },
+  {
+    "id": "api.command_mute.success_unmute_direct_msg",
+    "translation": "This channel is no longer muted."
   },
   {
     "id": "api.command_offline.desc",
@@ -1935,12 +1991,24 @@
     "translation": "Impossible de récupérer le message lorsqu'un événement de réaction est en cours d'envoi via le websocket"
   },
   {
+    "id": "api.roles.patch_roles.license.error",
+    "translation": "Your current license does not support advanced permissions."
+  },
+  {
     "id": "api.saml.save_certificate.app_error",
     "translation": "Le certificat ne s'est pas enregistré correctement."
   },
   {
     "id": "api.server.new_server.init.info",
     "translation": "Le serveur démarre..."
+  },
+  {
+    "id": "api.server.start_server.forward80to443.disabled_while_using_lets_encrypt",
+    "translation": "Must enable Forward80To443 when using LetsEncrypt"
+  },
+  {
+    "id": "api.server.start_server.forward80to443.enabled_but_listening_on_wrong_port",
+    "translation": "Cannot forward port 80 to port 443 while listening on port %s: disable Forward80To443 if using a proxy server"
   },
   {
     "id": "api.server.start_server.listening.info",
@@ -2331,6 +2399,50 @@
     "translation": "%v a été retiré de l'équipe."
   },
   {
+    "id": "api.team.set_team_icon.array.app_error",
+    "translation": "Aucune image transmise dans la requête"
+  },
+  {
+    "id": "api.team.set_team_icon.decode.app_error",
+    "translation": "Could not decode team icon"
+  },
+  {
+    "id": "api.team.set_team_icon.decode_config.app_error",
+    "translation": "Could not decode team icon metadata"
+  },
+  {
+    "id": "api.team.set_team_icon.encode.app_error",
+    "translation": "Could not encode team icon"
+  },
+  {
+    "id": "api.team.set_team_icon.get_team.app_error",
+    "translation": "An error occurred getting the team"
+  },
+  {
+    "id": "api.team.set_team_icon.no_file.app_error",
+    "translation": "Pas de fichier dans le paramètre \"image\" de la requête"
+  },
+  {
+    "id": "api.team.set_team_icon.open.app_error",
+    "translation": "Impossible d'ouvrir le fichier image"
+  },
+  {
+    "id": "api.team.set_team_icon.parse.app_error",
+    "translation": "Impossible d'analyser le formulaire multipart"
+  },
+  {
+    "id": "api.team.set_team_icon.storage.app_error",
+    "translation": "Impossible d'envoyer le fichier. Le stockage d'images n'est pas configuré."
+  },
+  {
+    "id": "api.team.set_team_icon.too_large.app_error",
+    "translation": "Impossible d'envoyer le fichier. Le fichier est trop volumineux."
+  },
+  {
+    "id": "api.team.set_team_icon.write_file.app_error",
+    "translation": "Could not save team icon"
+  },
+  {
     "id": "api.team.signup_team.email_disabled.app_error",
     "translation": "L'inscription avec une adresse e-mail est désactivée."
   },
@@ -2717,10 +2829,6 @@
   {
     "id": "api.user.create_user.signup_link_invalid.app_error",
     "translation": "Le lien d'enregistrement n'est pas valide."
-  },
-  {
-    "id": "api.user.create_user.signup_link_mismatched_invite_id.app_error",
-    "translation": "Le lien d'inscription semble ne pas être valide."
   },
   {
     "id": "api.user.create_user.team_name.app_error",
@@ -3647,6 +3755,10 @@
     "translation": "Impossible d'activer le plugin extrait. Il se peut qu'il existe déjà et soit déjà activé."
   },
   {
+    "id": "app.plugin.cluster.save_config.app_error",
+    "translation": "The plugin configuration in your config.json file must be updated manually when using ReadOnlyConfig with clustering enabled."
+  },
+  {
     "id": "app.plugin.config.app_error",
     "translation": "Une erreur s'est produite lors de la sauvegarde de l'état du plugin dans la configuration"
   },
@@ -3707,8 +3819,24 @@
     "translation": "Les plugins et/ou l'envoi de plugins ont été désactivés."
   },
   {
+    "id": "app.role.check_roles_exist.role_not_found",
+    "translation": "The provided role does not exist"
+  },
+  {
     "id": "app.team.join_user_to_team.max_accounts.app_error",
     "translation": "Cette équipe a atteint la limite du nombre maximum de comptes autorisés. Contactez votre administrateur système pour augmenter cette limite."
+  },
+  {
+    "id": "app.timezones.failed_deserialize.app_error",
+    "translation": "Failed to deserialize Timezone config file={{.Filename}}, err={{.Error}}"
+  },
+  {
+    "id": "app.timezones.load_config.app_error",
+    "translation": "Timezone config file does not exists file={{.Filename}}"
+  },
+  {
+    "id": "app.timezones.read_config.app_error",
+    "translation": "Failed to read Timezone config file={{.Filename}}, err={{.Error}}"
   },
   {
     "id": "app.user_access_token.disabled",
@@ -4467,6 +4595,10 @@
     "translation": "La valeur de notification par e-mail est invalide"
   },
   {
+    "id": "model.channel_member.is_valid.mute_value.app_error",
+    "translation": "Invalid muting value"
+  },
+  {
     "id": "model.channel_member.is_valid.notify_level.app_error",
     "translation": "Le niveau de notification est invalide"
   },
@@ -4907,12 +5039,36 @@
     "translation": "Message export job ExportFormat must be one of either 'actiance' or 'globalrelay'"
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "Message export job ExportFormat must be one of either 'actiance' or 'globalrelay'"
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "Le paramètre FileLocation de la tâche d'exportation de messages doit être un dossier avec droits d'écriture. Il s'agit du dossier dans lequel les données seront exportées."
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "Le paramètre FileLocation de la tâche d'exportation de messages doit être un sous-dossier de FileSettings.Directory."
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.config_missing.app_error",
+    "translation": "Message export job ExportFormat is set to 'globalrelay', but GlobalRelaySettings are missing"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.customer_type.app_error",
+    "translation": "Message export GlobalRelaySettings.CustomerType must be set to one of either 'A9' or 'A10'"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.email_address.app_error",
+    "translation": "Message export job GlobalRelaySettings.EmailAddress must be set to a valid email address"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_password.app_error",
+    "translation": "Message export job GlobalRelaySettings.SmtpPassword must be set"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_username.app_error",
+    "translation": "Message export job GlobalRelaySettings.SmtpUsername must be set"
   },
   {
     "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
@@ -6343,6 +6499,18 @@
     "translation": "Impossible de sélectionner les messages à supprimer pour l'utilisateur (trop nombreux), veuillez relancer"
   },
   {
+    "id": "store.sql_post.query_max_post_size.error",
+    "translation": "We couldn't determine the maximum supported post size"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.max_post_size_bytes",
+    "translation": "Post.Message supports at most %d characters (%d bytes)"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.unrecognized_driver",
+    "translation": "No implementation found to determine the maximum supported post size"
+  },
+  {
     "id": "store.sql_post.save.app_error",
     "translation": "Impossible d'enregistrer le message"
   },
@@ -6469,6 +6637,30 @@
   {
     "id": "store.sql_reaction.save.save.app_error",
     "translation": "Impossible de sauvegarder cette réaction"
+  },
+  {
+    "id": "store.sql_role.get.app_error",
+    "translation": "Impossible de récupérer le message"
+  },
+  {
+    "id": "store.sql_role.get_by_name.app_error",
+    "translation": "Impossible de récupérer le message"
+  },
+  {
+    "id": "store.sql_role.get_by_names.app_error",
+    "translation": "Impossible de récupérer le message"
+  },
+  {
+    "id": "store.sql_role.save.insert.app_error",
+    "translation": "Unable to save new role"
+  },
+  {
+    "id": "store.sql_role.save.invalid_role.app_error",
+    "translation": "The role was not valid"
+  },
+  {
+    "id": "store.sql_role.save.update.app_error",
+    "translation": "Impossible de récupérer le message"
   },
   {
     "id": "store.sql_session.analytics_session_count.app_error",

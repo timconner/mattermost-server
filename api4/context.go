@@ -125,8 +125,10 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			l4g.Info(utils.T("api.context.invalid_session.error"), err.Error())
-			c.RemoveSessionCookie(w, r)
-			if h.requireSession {
+			if err.StatusCode == http.StatusInternalServerError {
+				c.Err = err
+			} else if h.requireSession {
+				c.RemoveSessionCookie(w, r)
 				c.Err = model.NewAppError("ServeHTTP", "api.context.session_expired.app_error", nil, "token="+token, http.StatusUnauthorized)
 			}
 		} else if !session.IsOAuth && tokenLocation == app.TokenLocationQueryString {
@@ -155,7 +157,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleFunc(c, w, r)
 	}
 
-	// Handle errors that have occured
+	// Handle errors that have occurred
 	if c.Err != nil {
 		c.Err.Translate(c.T)
 		c.Err.RequestId = c.RequestId
@@ -634,5 +636,28 @@ func (c *Context) RequireActionId() *Context {
 	if len(c.Params.ActionId) != 26 {
 		c.SetInvalidUrlParam("action_id")
 	}
+	return c
+}
+
+func (c *Context) RequireRoleId() *Context {
+	if c.Err != nil {
+		return c
+	}
+
+	if len(c.Params.RoleId) != 26 {
+		c.SetInvalidUrlParam("role_id")
+	}
+	return c
+}
+
+func (c *Context) RequireRoleName() *Context {
+	if c.Err != nil {
+		return c
+	}
+
+	if !model.IsValidRoleName(c.Params.RoleName) {
+		c.SetInvalidUrlParam("role_name")
+	}
+
 	return c
 }

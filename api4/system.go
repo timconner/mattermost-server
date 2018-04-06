@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"runtime"
-	"strconv"
 
 	l4g "github.com/alecthomas/log4go"
 	"github.com/mattermost/mattermost-server/model"
@@ -17,6 +16,8 @@ import (
 
 func (api *API) InitSystem() {
 	api.BaseRoutes.System.Handle("/ping", api.ApiHandler(getSystemPing)).Methods("GET")
+
+	api.BaseRoutes.System.Handle("/timezones", api.ApiSessionRequired(getSupportedTimezones)).Methods("GET")
 
 	api.BaseRoutes.ApiRoot.Handle("/config", api.ApiSessionRequired(getConfig)).Methods("GET")
 	api.BaseRoutes.ApiRoot.Handle("/config", api.ApiSessionRequired(updateConfig)).Methods("PUT")
@@ -29,6 +30,7 @@ func (api *API) InitSystem() {
 
 	api.BaseRoutes.ApiRoot.Handle("/audits", api.ApiSessionRequired(getAudits)).Methods("GET")
 	api.BaseRoutes.ApiRoot.Handle("/email/test", api.ApiSessionRequired(testEmail)).Methods("POST")
+	api.BaseRoutes.ApiRoot.Handle("/file/s3_test", api.ApiSessionRequired(testS3)).Methods("POST")
 	api.BaseRoutes.ApiRoot.Handle("/database/recycle", api.ApiSessionRequired(databaseRecycle)).Methods("POST")
 	api.BaseRoutes.ApiRoot.Handle("/caches/invalidate", api.ApiSessionRequired(invalidateCaches)).Methods("POST")
 
@@ -246,14 +248,7 @@ func getClientConfig(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respCfg := map[string]string{}
-	for k, v := range c.App.ClientConfig() {
-		respCfg[k] = v
-	}
-
-	respCfg["NoAccounts"] = strconv.FormatBool(c.App.IsFirstUserAccount())
-
-	w.Write([]byte(model.MapToJson(respCfg)))
+	w.Write([]byte(model.MapToJson(c.App.ClientConfigWithComputed())))
 }
 
 func getClientLicense(c *Context, w http.ResponseWriter, r *http.Request) {
@@ -383,4 +378,50 @@ func getAnalytics(c *Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(rows.ToJson()))
+}
+
+func getSupportedTimezones(c *Context, w http.ResponseWriter, r *http.Request) {
+	supportedTimezones := c.App.Timezones()
+
+	if supportedTimezones != nil {
+		w.Write([]byte(model.TimezonesToJson(supportedTimezones)))
+		return
+	}
+
+	emptyTimezones := make([]string, 0)
+	w.Write([]byte(model.TimezonesToJson(emptyTimezones)))
+}
+
+func testS3(c *Context, w http.ResponseWriter, r *http.Request) {
+	cfg := model.ConfigFromJson(r.Body)
+	if cfg == nil {
+		cfg = c.App.Config()
+	}
+
+	if !c.App.SessionHasPermissionTo(c.Session, model.PERMISSION_MANAGE_SYSTEM) {
+		c.SetPermissionError(model.PERMISSION_MANAGE_SYSTEM)
+		return
+	}
+
+	err := utils.CheckMandatoryS3Fields(&cfg.FileSettings)
+	if err != nil {
+		c.Err = err
+		return
+	}
+
+	if cfg.FileSettings.AmazonS3SecretAccessKey == model.FAKE_SETTING {
+		cfg.FileSettings.AmazonS3SecretAccessKey = c.App.Config().FileSettings.AmazonS3SecretAccessKey
+	}
+
+	license := c.App.License()
+	backend, appErr := utils.NewFileBackend(&cfg.FileSettings, license != nil && *license.Features.Compliance)
+	if appErr == nil {
+		appErr = backend.TestConnection()
+	}
+	if appErr != nil {
+		c.Err = appErr
+		return
+	}
+
+	ReturnStatusOK(w)
 }

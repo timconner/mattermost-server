@@ -36,6 +36,13 @@ func TestUserPreSave(t *testing.T) {
 	user := User{Password: "test"}
 	user.PreSave()
 	user.Etag(true, true)
+	if user.Timezone == nil {
+		t.Fatal("Timezone is nil")
+	}
+
+	if user.Timezone["useAutomaticTimezone"] != "true" {
+		t.Fatal("Timezone is not set to default")
+	}
 }
 
 func TestUserPreUpdate(t *testing.T) {
@@ -287,11 +294,11 @@ func TestCleanUsername(t *testing.T) {
 
 func TestRoles(t *testing.T) {
 
-	if IsValidUserRoles("admin") {
+	if !IsValidUserRoles("team_user") {
 		t.Fatal()
 	}
 
-	if IsValidUserRoles("junk") {
+	if IsValidUserRoles("system_admin") {
 		t.Fatal()
 	}
 

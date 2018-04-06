@@ -55,10 +55,15 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 
 	if channel.Type == model.CHANNEL_DIRECT {
 		var otherUserId string
-		if userIds := strings.Split(channel.Name, "__"); userIds[0] == post.UserId {
-			otherUserId = userIds[1]
-		} else {
-			otherUserId = userIds[0]
+
+		userIds := strings.Split(channel.Name, "__")
+
+		if userIds[0] != userIds[1] {
+			if userIds[0] == post.UserId {
+				otherUserId = userIds[1]
+			} else {
+				otherUserId = userIds[0]
+			}
 		}
 
 		if _, ok := profileMap[otherUserId]; ok {
@@ -94,7 +99,7 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 				outOfChannelMentions := result.Data.([]*model.User)
 				if channel.Type != model.CHANNEL_GROUP {
 					a.Go(func() {
-						a.sendOutOfChannelMentions(sender, post, channel.Type, outOfChannelMentions)
+						a.sendOutOfChannelMentions(sender, post, outOfChannelMentions)
 					})
 				}
 			}
@@ -155,6 +160,14 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 			if channelEmail, ok := channelMemberNotifyPropsMap[id][model.EMAIL_NOTIFY_PROP]; ok {
 				if channelEmail != model.CHANNEL_NOTIFY_DEFAULT {
 					userAllowsEmails = channelEmail != "false"
+				}
+			}
+
+			// Remove the user as recipient when the user has muted the channel.
+			if channelMuted, ok := channelMemberNotifyPropsMap[id][model.MARK_UNREAD_NOTIFY_PROP]; ok {
+				if channelMuted == model.CHANNEL_MARK_UNREAD_MENTION {
+					l4g.Debug("Channel muted for user_id %v, channel_mute %v", id, channelMuted)
+					userAllowsEmails = false
 				}
 			}
 
@@ -739,7 +752,7 @@ func (a *App) getMobileAppSessions(userId string) ([]*model.Session, *model.AppE
 	}
 }
 
-func (a *App) sendOutOfChannelMentions(sender *model.User, post *model.Post, channelType string, users []*model.User) *model.AppError {
+func (a *App) sendOutOfChannelMentions(sender *model.User, post *model.Post, users []*model.User) *model.AppError {
 	if len(users) == 0 {
 		return nil
 	}
@@ -757,25 +770,16 @@ func (a *App) sendOutOfChannelMentions(sender *model.User, post *model.Post, cha
 
 	T := utils.GetUserTranslations(sender.Locale)
 
-	var localePhrase string
-	if channelType == model.CHANNEL_OPEN {
-		localePhrase = T("api.post.check_for_out_of_channel_mentions.link.public")
-	} else if channelType == model.CHANNEL_PRIVATE {
-		localePhrase = T("api.post.check_for_out_of_channel_mentions.link.private")
-	}
-
 	ephemeralPostId := model.NewId()
 	var message string
 	if len(users) == 1 {
 		message = T("api.post.check_for_out_of_channel_mentions.message.one", map[string]interface{}{
 			"Username": usernames[0],
-			"Phrase":   localePhrase,
 		})
 	} else {
 		message = T("api.post.check_for_out_of_channel_mentions.message.multiple", map[string]interface{}{
 			"Usernames":    strings.Join(usernames[:len(usernames)-1], ", @"),
 			"LastUsername": usernames[len(usernames)-1],
-			"Phrase":       localePhrase,
 		})
 	}
 
@@ -877,8 +881,17 @@ func GetExplicitMentions(message string, keywords map[string][]string) *Explicit
 			}
 
 			// remove trailing '.', as that is the end of a sentence
-			word = strings.TrimSuffix(word, ".")
-			if checkForMention(word) {
+			foundWithSuffix := false
+
+			for strings.HasSuffix(word, ".") {
+				word = strings.TrimSuffix(word, ".")
+				if checkForMention(word) {
+					foundWithSuffix = true
+					break
+				}
+			}
+
+			if foundWithSuffix {
 				continue
 			}
 
@@ -972,6 +985,13 @@ func DoesNotifyPropsAllowPushNotification(user *model.User, channelNotifyProps m
 	userNotifyProps := user.NotifyProps
 	userNotify := userNotifyProps[model.PUSH_NOTIFY_PROP]
 	channelNotify, ok := channelNotifyProps[model.PUSH_NOTIFY_PROP]
+
+	// If the channel is muted do not send push notifications
+	if channelMuted, ok := channelNotifyProps[model.MARK_UNREAD_NOTIFY_PROP]; ok {
+		if channelMuted == model.CHANNEL_MARK_UNREAD_MENTION {
+			return false
+		}
+	}
 
 	if post.IsSystemMessage() {
 		return false

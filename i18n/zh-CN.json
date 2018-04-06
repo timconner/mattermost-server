@@ -108,6 +108,18 @@
     "translation": "Mattermost - 测试邮箱设置"
   },
   {
+    "id": "api.admin.test_s3.missing_s3_bucket",
+    "translation": "必须填写 S3 储存桶"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_endpoint",
+    "translation": "必须填写 S3 Endpoint"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_region",
+    "translation": "必须填写 S3 区域"
+  },
+  {
     "id": "api.admin.upload_brand_image.array.app_error",
     "translation": "请求中图片为空"
   },
@@ -318,6 +330,18 @@
   {
     "id": "api.channel.leave.left",
     "translation": "%v 已退出该频道。"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.create_post.error",
+    "translation": "Failed to post channel conversion to private message"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.retrieve_user.error",
+    "translation": "Failed to retrieve user while converting the channel from public to private"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.updated_from",
+    "translation": "%s converted the channel from public to private"
   },
   {
     "id": "api.channel.post_update_channel_displayname_message_and_forget.create_post.error",
@@ -873,6 +897,38 @@
   {
     "id": "api.command_msg.success",
     "translation": "消息已发送给用户。"
+  },
+  {
+    "id": "api.command_mute.desc",
+    "translation": "Turns off desktop, email and push notifications for the current channel or the [channel] specified."
+  },
+  {
+    "id": "api.command_mute.error",
+    "translation": "无法找到频道 {{.Channel}}。"
+  },
+  {
+    "id": "api.command_mute.hint",
+    "translation": "[频道]"
+  },
+  {
+    "id": "api.command_mute.name",
+    "translation": "静音"
+  },
+  {
+    "id": "api.command_mute.success_mute",
+    "translation": "您将不会收到 {{.Channel}} 的通知直到取消频道静音。"
+  },
+  {
+    "id": "api.command_mute.success_mute_direct_msg",
+    "translation": "您将不会收到此频道的通知直到取消频道静音。"
+  },
+  {
+    "id": "api.command_mute.success_unmute",
+    "translation": "{{.Channel}} 不再被静音。"
+  },
+  {
+    "id": "api.command_mute.success_unmute_direct_msg",
+    "translation": "此频道不再被静音。"
   },
   {
     "id": "api.command_offline.desc",
@@ -1935,12 +1991,24 @@
     "translation": "发送 websocket 互动事件时获取消息失败"
   },
   {
+    "id": "api.roles.patch_roles.license.error",
+    "translation": "您当前的授权不支持高级权限。"
+  },
+  {
     "id": "api.saml.save_certificate.app_error",
     "translation": "证书没有正确保存。"
   },
   {
     "id": "api.server.new_server.init.info",
     "translation": "服务正在初始化..."
+  },
+  {
+    "id": "api.server.start_server.forward80to443.disabled_while_using_lets_encrypt",
+    "translation": "使用 LetsEncrypt 时必须开启 Forward80To443"
+  },
+  {
+    "id": "api.server.start_server.forward80to443.enabled_but_listening_on_wrong_port",
+    "translation": "无法在监听端口 %s 时转发端口 80 到端口 443：使用代理服务器时停用 Forward80To443"
   },
   {
     "id": "api.server.start_server.listening.info",
@@ -2331,6 +2399,50 @@
     "translation": "%v 已移出团队。"
   },
   {
+    "id": "api.team.set_team_icon.array.app_error",
+    "translation": "请求中图片为空"
+  },
+  {
+    "id": "api.team.set_team_icon.decode.app_error",
+    "translation": "无法解码团队图标"
+  },
+  {
+    "id": "api.team.set_team_icon.decode_config.app_error",
+    "translation": "Could not decode team icon metadata"
+  },
+  {
+    "id": "api.team.set_team_icon.encode.app_error",
+    "translation": "无法编码团队图标"
+  },
+  {
+    "id": "api.team.set_team_icon.get_team.app_error",
+    "translation": "获取团队时发生错误"
+  },
+  {
+    "id": "api.team.set_team_icon.no_file.app_error",
+    "translation": "请求中缺失图片文件"
+  },
+  {
+    "id": "api.team.set_team_icon.open.app_error",
+    "translation": "无法打开图像文件"
+  },
+  {
+    "id": "api.team.set_team_icon.parse.app_error",
+    "translation": "不能解析混合表单"
+  },
+  {
+    "id": "api.team.set_team_icon.storage.app_error",
+    "translation": "不能上传团队图标。没有配置图片存储。"
+  },
+  {
+    "id": "api.team.set_team_icon.too_large.app_error",
+    "translation": "不能上传团队图标。文件太大。"
+  },
+  {
+    "id": "api.team.set_team_icon.write_file.app_error",
+    "translation": "无法保存团队图标"
+  },
+  {
     "id": "api.team.signup_team.email_disabled.app_error",
     "translation": "使用电子邮件注册团队被禁用。"
   },
@@ -2716,10 +2828,6 @@
   },
   {
     "id": "api.user.create_user.signup_link_invalid.app_error",
-    "translation": "注册链接无效"
-  },
-  {
-    "id": "api.user.create_user.signup_link_mismatched_invite_id.app_error",
     "translation": "注册链接无效"
   },
   {
@@ -3647,6 +3755,10 @@
     "translation": "无法激活揭开的插件。插件可能已存在并已激活。"
   },
   {
+    "id": "app.plugin.cluster.save_config.app_error",
+    "translation": "The plugin configuration in your config.json file must be updated manually when using ReadOnlyConfig with clustering enabled."
+  },
+  {
     "id": "app.plugin.config.app_error",
     "translation": "保存插件状态到配置出错"
   },
@@ -3707,8 +3819,24 @@
     "translation": "插件上传已禁用。"
   },
   {
+    "id": "app.role.check_roles_exist.role_not_found",
+    "translation": "提供的角色不存在"
+  },
+  {
     "id": "app.team.join_user_to_team.max_accounts.app_error",
     "translation": "这个团队已经达到允许的最大帐号数量。请与系统管理员联系以设置更高的限制。"
+  },
+  {
+    "id": "app.timezones.failed_deserialize.app_error",
+    "translation": "读取时区配置文件失败 file={{.Filename}}, err={{.Error}}"
+  },
+  {
+    "id": "app.timezones.load_config.app_error",
+    "translation": "时区配置文件不存在 file={{.Filename}}"
+  },
+  {
+    "id": "app.timezones.read_config.app_error",
+    "translation": "读取时区配置文件失败 file={{.Filename}}, err={{.Error}}"
   },
   {
     "id": "app.user_access_token.disabled",
@@ -4467,6 +4595,10 @@
     "translation": "无效的电子邮件通知值"
   },
   {
+    "id": "model.channel_member.is_valid.mute_value.app_error",
+    "translation": "无效的静音值"
+  },
+  {
     "id": "model.channel_member.is_valid.notify_level.app_error",
     "translation": "无效通知级别"
   },
@@ -4907,12 +5039,36 @@
     "translation": "消息导出任务 ExportFormat 必须为 'actiance' 或 'globalrelay'"
   },
   {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "消息导出任务 ExportFormat 必须为 'actiance' 或 'globalrelay'"
+  },
+  {
     "id": "model.config.is_valid.message_export.file_location.app_error",
     "translation": "消息导出任务 FileLocation 比如为可写的目录"
   },
   {
     "id": "model.config.is_valid.message_export.file_location.relative",
     "translation": "消息导出任务 FileLocation 必须为 FileSettings.Directory 的子目录"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.config_missing.app_error",
+    "translation": "Message export job ExportFormat is set to 'globalrelay', but GlobalRelaySettings are missing"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.customer_type.app_error",
+    "translation": "消息导出 GlobalRelaySettings.CustomerType 必须设为 'A9' 或 'A10'"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.email_address.app_error",
+    "translation": "消息导出任务 GlobalRelaySettings.EmailAddress 必须为有效的电子邮箱地址"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_password.app_error",
+    "translation": "必须设定消息导出任务 GlobalRelaySettings.SmtpPassword"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_username.app_error",
+    "translation": "必须设定消息导出任务 GlobalRelaySettings.SmtpUsername"
   },
   {
     "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
@@ -6343,6 +6499,18 @@
     "translation": "我们不能为用户选择要删除的信息（数量太多），请重新运行"
   },
   {
+    "id": "store.sql_post.query_max_post_size.error",
+    "translation": "我们无法判断最大支持的消息大小"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.max_post_size_bytes",
+    "translation": "Post.Message supports at most %d characters (%d bytes)"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.unrecognized_driver",
+    "translation": "没用检测消息最大小的实装"
+  },
+  {
     "id": "store.sql_post.save.app_error",
     "translation": "我们无法保存这个邮件"
   },
@@ -6469,6 +6637,30 @@
   {
     "id": "store.sql_reaction.save.save.app_error",
     "translation": "无法保存互动"
+  },
+  {
+    "id": "store.sql_role.get.app_error",
+    "translation": "无法获取角色"
+  },
+  {
+    "id": "store.sql_role.get_by_name.app_error",
+    "translation": "无法获取角色"
+  },
+  {
+    "id": "store.sql_role.get_by_names.app_error",
+    "translation": "无法获取角色"
+  },
+  {
+    "id": "store.sql_role.save.insert.app_error",
+    "translation": "无法保存新角色"
+  },
+  {
+    "id": "store.sql_role.save.invalid_role.app_error",
+    "translation": "无效的角色"
+  },
+  {
+    "id": "store.sql_role.save.update.app_error",
+    "translation": "无法更新角色"
   },
   {
     "id": "store.sql_session.analytics_session_count.app_error",
