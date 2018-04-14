@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	l4g "github.com/alecthomas/log4go"
+
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -118,6 +119,7 @@ func updateChannel(c *Context, w http.ResponseWriter, r *http.Request) {
 	oldChannel.Purpose = channel.Purpose
 
 	oldChannelDisplayName := oldChannel.DisplayName
+	oldChannelType := oldChannel.Type
 
 	if len(channel.DisplayName) > 0 {
 		oldChannel.DisplayName = channel.DisplayName
@@ -140,6 +142,13 @@ func updateChannel(c *Context, w http.ResponseWriter, r *http.Request) {
 				l4g.Error(err.Error())
 			}
 		}
+
+		if oldChannelType == model.CHANNEL_OPEN && channel.Type == model.CHANNEL_PRIVATE {
+			if err := c.App.PostConvertChannelToPrivate(c.Session.UserId, channel); err != nil {
+				l4g.Error(err.Error())
+			}
+		}
+
 		c.LogAudit("name=" + channel.Name)
 		w.Write([]byte(oldChannel.ToJson()))
 	}
@@ -734,7 +743,7 @@ func viewChannel(c *Context, w http.ResponseWriter, r *http.Request) {
 
 	c.App.UpdateLastActivityAtIfNeeded(c.Session)
 
-	// Returning {"status": "OK", ...} for backwards compatability
+	// Returning {"status": "OK", ...} for backwards compatibility
 	resp := &model.ChannelViewResponse{
 		Status:            "OK",
 		LastViewedAtTimes: times,
@@ -852,7 +861,7 @@ func addChannelMember(c *Context, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if channel.Type == model.CHANNEL_PRIVATE && !c.App.SessionHasPermissionToChannel(c.Session, channel.Id, model.PERMISSION_MANAGE_PRIVATE_CHANNEL_MEMBERS) {
+	if channel.Type == model.CHANNEL_PRIVATE && !c.App.SessionHasPermissionToTeam(c.Session, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
 		c.SetPermissionError(model.PERMISSION_MANAGE_PRIVATE_CHANNEL_MEMBERS)
 		return
 	}

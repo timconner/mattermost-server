@@ -121,10 +121,9 @@ func (a *App) CreatePost(post *model.Post, channel *model.Channel, triggerWebhoo
 		user = result.Data.(*model.User)
 	}
 
-	if a.License() != nil && *a.Config().TeamSettings.ExperimentalTownSquareIsReadOnly &&
-		!post.IsSystemMessage() &&
+	if !post.IsSystemMessage() &&
 		channel.Name == model.DEFAULT_CHANNEL &&
-		!a.CheckIfRolesGrantPermission(user.GetRoles(), model.PERMISSION_MANAGE_SYSTEM.Id) {
+		!a.HasPermissionToTeam(user.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
 		return nil, model.NewAppError("createPost", "api.post.create_post.town_square_read_only", nil, "", http.StatusForbidden)
 	}
 
@@ -153,6 +152,11 @@ func (a *App) CreatePost(post *model.Post, channel *model.Channel, triggerWebhoo
 	}
 
 	post.Hashtags, _ = model.ParseHashtags(post.Message)
+
+        if user.Props["is_bot"] == "true" {
+            post.AddProp("from_webhook", "true");
+            post.AddProp("override_icon_url", a.GetSiteURL() + "/api/v4/users/" + user.Id + "/image");
+        }
 
 	if err := a.FillInPostProps(post, channel); err != nil {
 		return nil, err
@@ -326,13 +330,6 @@ func (a *App) UpdatePost(post *model.Post, safeUpdate bool) (*model.Post, *model
 	} else {
 		oldPost = result.Data.(*model.PostList).Posts[post.Id]
 
-		if a.License() != nil {
-			if *a.Config().ServiceSettings.AllowEditPost == model.ALLOW_EDIT_POST_NEVER && post.Message != oldPost.Message {
-				err := model.NewAppError("UpdatePost", "api.post.update_post.permissions_denied.app_error", nil, "", http.StatusForbidden)
-				return nil, err
-			}
-		}
-
 		if oldPost == nil {
 			err := model.NewAppError("UpdatePost", "api.post.update_post.find.app_error", nil, "id="+post.Id, http.StatusBadRequest)
 			return nil, err
@@ -349,7 +346,7 @@ func (a *App) UpdatePost(post *model.Post, safeUpdate bool) (*model.Post, *model
 		}
 
 		if a.License() != nil {
-			if *a.Config().ServiceSettings.AllowEditPost == model.ALLOW_EDIT_POST_TIME_LIMIT && model.GetMillis() > oldPost.CreateAt+int64(*a.Config().ServiceSettings.PostEditTimeLimit*1000) && post.Message != oldPost.Message {
+			if *a.Config().ServiceSettings.PostEditTimeLimit != -1 && model.GetMillis() > oldPost.CreateAt+int64(*a.Config().ServiceSettings.PostEditTimeLimit*1000) && post.Message != oldPost.Message {
 				err := model.NewAppError("UpdatePost", "api.post.update_post.permissions_time_limit.app_error", map[string]interface{}{"timeLimit": *a.Config().ServiceSettings.PostEditTimeLimit}, "", http.StatusBadRequest)
 				return nil, err
 			}
@@ -964,4 +961,15 @@ func (a *App) ImageProxyRemover() (f func(string) string) {
 
 		return url
 	}
+}
+
+func (a *App) MaxPostSize() int {
+	maxPostSize := model.POST_MESSAGE_MAX_RUNES_V1
+	if result := <-a.Srv.Store.Post().GetMaxPostSize(); result.Err != nil {
+		l4g.Error(result.Err)
+	} else {
+		maxPostSize = result.Data.(int)
+	}
+
+	return maxPostSize
 }

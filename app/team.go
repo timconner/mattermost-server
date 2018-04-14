@@ -160,6 +160,10 @@ func (a *App) UpdateTeamMemberRoles(teamId string, userId string, newRoles strin
 		return nil, err
 	}
 
+	if err := a.CheckRolesExist(strings.Fields(newRoles)); err != nil {
+		return nil, err
+	}
+
 	member.Roles = newRoles
 
 	if result := <-a.Srv.Store.Team().UpdateMember(member); result.Err != nil {
@@ -232,11 +236,6 @@ func (a *App) AddUserToTeamByHash(userId string, hash string, data string) (*mod
 		return nil, result.Err
 	} else {
 		team = result.Data.(*model.Team)
-	}
-
-	// verify that the team's invite id hasn't been changed since the invite was sent
-	if team.InviteId != props["invite_id"] {
-		return nil, model.NewAppError("JoinUserToTeamByHash", "api.user.create_user.signup_link_mismatched_invite_id.app_error", nil, "", http.StatusBadRequest)
 	}
 
 	var user *model.User

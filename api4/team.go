@@ -285,7 +285,7 @@ func getTeamMembers(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if members, err := c.App.GetTeamMembers(c.Params.TeamId, c.Params.Page, c.Params.PerPage); err != nil {
+	if members, err := c.App.GetTeamMembers(c.Params.TeamId, c.Params.Page*c.Params.PerPage, c.Params.PerPage); err != nil {
 		c.Err = err
 		return
 	} else {
@@ -543,9 +543,9 @@ func getAllTeams(c *Context, w http.ResponseWriter, r *http.Request) {
 	var err *model.AppError
 
 	if c.App.SessionHasPermissionTo(c.Session, model.PERMISSION_MANAGE_SYSTEM) {
-		teams, err = c.App.GetAllTeamsPage(c.Params.Page, c.Params.PerPage)
+		teams, err = c.App.GetAllTeamsPage(c.Params.Page*c.Params.PerPage, c.Params.PerPage)
 	} else {
-		teams, err = c.App.GetAllOpenTeamsPage(c.Params.Page, c.Params.PerPage)
+		teams, err = c.App.GetAllOpenTeamsPage(c.Params.Page*c.Params.PerPage, c.Params.PerPage)
 	}
 
 	if err != nil {
@@ -741,15 +741,16 @@ func getTeamIcon(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !c.App.SessionHasPermissionToTeam(c.Session, c.Params.TeamId, model.PERMISSION_VIEW_TEAM) {
-		c.SetPermissionError(model.PERMISSION_VIEW_TEAM)
-		return
-	}
-
 	if team, err := c.App.GetTeam(c.Params.TeamId); err != nil {
 		c.Err = err
 		return
 	} else {
+		if !c.App.SessionHasPermissionToTeam(c.Session, c.Params.TeamId, model.PERMISSION_VIEW_TEAM) &&
+			(team.Type != model.TEAM_OPEN || team.AllowOpenInvite) {
+			c.SetPermissionError(model.PERMISSION_VIEW_TEAM)
+			return
+		}
+
 		etag := strconv.FormatInt(team.LastTeamIconUpdate, 10)
 
 		if c.HandleEtag(etag, "Get Team Icon", w, r) {

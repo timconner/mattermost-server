@@ -108,6 +108,18 @@
     "translation": "Mattermost - Teste de Configurações de Email"
   },
   {
+    "id": "api.admin.test_s3.missing_s3_bucket",
+    "translation": "S3 Bucket é obrigatório"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_endpoint",
+    "translation": "S3 Endpoint é obrigatório"
+  },
+  {
+    "id": "api.admin.test_s3.missing_s3_region",
+    "translation": "S3 Region é obrigatório"
+  },
+  {
     "id": "api.admin.upload_brand_image.array.app_error",
     "translation": "Matriz vazia em 'image' na requisição"
   },
@@ -318,6 +330,18 @@
   {
     "id": "api.channel.leave.left",
     "translation": "%v deixou o canal."
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.create_post.error",
+    "translation": "Falha ao postar a conversão do canal em mensagem privada"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.retrieve_user.error",
+    "translation": "Falha ao recuperar usuário durante a conversão do canal de público para privado"
+  },
+  {
+    "id": "api.channel.post_convert_channel_to_private.updated_from",
+    "translation": "%s convertido de canal publico para privado"
   },
   {
     "id": "api.channel.post_update_channel_displayname_message_and_forget.create_post.error",
@@ -772,7 +796,7 @@
   },
   {
     "id": "api.command_join.hint",
-    "translation": "[nome-canal]"
+    "translation": "~[canal]"
   },
   {
     "id": "api.command_join.list.app_error",
@@ -873,6 +897,38 @@
   {
     "id": "api.command_msg.success",
     "translation": "Mensagem enviada."
+  },
+  {
+    "id": "api.command_mute.desc",
+    "translation": "Desativa a área de trabalho, e-mail e envio notificações para o canal atual ou o [canal] especificado."
+  },
+  {
+    "id": "api.command_mute.error",
+    "translation": "Não foi possível encontrar o canal {{.Channel}}. Por favor use o [identificador de canal](https://about.mattermost.com/default-channel-handle-documentation) para identificar os canais."
+  },
+  {
+    "id": "api.command_mute.hint",
+    "translation": "~[canal]"
+  },
+  {
+    "id": "api.command_mute.name",
+    "translation": "mudo"
+  },
+  {
+    "id": "api.command_mute.success_mute",
+    "translation": "Você não irá receber notificações de {{.Channel}} até que o mudo do canal seja desativado."
+  },
+  {
+    "id": "api.command_mute.success_mute_direct_msg",
+    "translation": "Você não irá receber notificações deste canal até que o mudo do canal seja desativado."
+  },
+  {
+    "id": "api.command_mute.success_unmute",
+    "translation": "{{.Channel}} não está mais silenciado."
+  },
+  {
+    "id": "api.command_mute.success_unmute_direct_msg",
+    "translation": "Este canal não está mais silenciado."
   },
   {
     "id": "api.command_offline.desc",
@@ -1370,7 +1426,7 @@
   },
   {
     "id": "api.file.upload_file.incorrect_number_of_files.app_error",
-    "translation": "Unable to upload files. Incorrect number of files specified."
+    "translation": "Não é possível enviar arquivos. Número incorreto de arquivos especificado."
   },
   {
     "id": "api.file.upload_file.large_image.app_error",
@@ -1641,20 +1697,12 @@
     "translation": "Arquivo faltando na requisição multipart/form"
   },
   {
-    "id": "api.post.check_for_out_of_channel_mentions.link.private",
-    "translation": "adicione-os ao canal privado"
-  },
-  {
-    "id": "api.post.check_for_out_of_channel_mentions.link.public",
-    "translation": "adicione-os ao canal"
-  },
-  {
     "id": "api.post.check_for_out_of_channel_mentions.message.multiple",
-    "translation": "@{{.Usernames}} e @{{.LastUsername}} foram mencionados mas não estão no canal. Você gostaria que {{.Phrase}}? Eles terão acesso o histórico de mensagens."
+    "translation": "@{{.Usernames}} e @{{.LastUsername}} foram mencionados, mas eles não receberam notificação porque eles não pertencem a este canal."
   },
   {
     "id": "api.post.check_for_out_of_channel_mentions.message.one",
-    "translation": "@{{.Username}} foi mencionado mas não está no canal. Você gostaria de {{.Phrase}}? Ele terá acesso a todo o histórico de mensagens."
+    "translation": "@{{.Username}} foi mencionado, mas eles não receberam uma notificação porque eles não pertencem a este canal."
   },
   {
     "id": "api.post.create_post.attach_files.error",
@@ -1820,7 +1868,7 @@
   },
   {
     "id": "api.post.send_notifications_and_forget.push_image_only_no_channel",
-    "translation": " enviado um ou mais arquivos em "
+    "translation": " enviado um ou mais arquivos"
   },
   {
     "id": "api.post.send_notifications_and_forget.push_in",
@@ -1935,12 +1983,24 @@
     "translation": "Falha ao obter a postagem ao enviar evento websocket para reação"
   },
   {
+    "id": "api.roles.patch_roles.license.error",
+    "translation": "Sua licença atual não tem suporte a permissões avançadas."
+  },
+  {
     "id": "api.saml.save_certificate.app_error",
     "translation": "O certificado não foi salvo corretamente."
   },
   {
     "id": "api.server.new_server.init.info",
     "translation": "O servidor está inicializando..."
+  },
+  {
+    "id": "api.server.start_server.forward80to443.disabled_while_using_lets_encrypt",
+    "translation": "Necessário ativar Forward80To443 quando usar LetsEncrypt"
+  },
+  {
+    "id": "api.server.start_server.forward80to443.enabled_but_listening_on_wrong_port",
+    "translation": "Não é possível encaminhar porta 80 para 443 enquanto estiver escutando na porta %s: desative Forward80To443 se usar um servidor proxy"
   },
   {
     "id": "api.server.start_server.listening.info",
@@ -2331,6 +2391,50 @@
     "translation": "%v foi removido da equipe."
   },
   {
+    "id": "api.team.set_team_icon.array.app_error",
+    "translation": "Matriz vazia em 'image' na requisição"
+  },
+  {
+    "id": "api.team.set_team_icon.decode.app_error",
+    "translation": "Não foi possível ler o ícone da equipe"
+  },
+  {
+    "id": "api.team.set_team_icon.decode_config.app_error",
+    "translation": "Não foi possível ler os metadados do ícone da equipe"
+  },
+  {
+    "id": "api.team.set_team_icon.encode.app_error",
+    "translation": "Não foi possível codificar o ícone da equipe"
+  },
+  {
+    "id": "api.team.set_team_icon.get_team.app_error",
+    "translation": "Ocorreu um erro ao obter a equipe"
+  },
+  {
+    "id": "api.team.set_team_icon.no_file.app_error",
+    "translation": "Nenhum arquivo em 'image' na requisição"
+  },
+  {
+    "id": "api.team.set_team_icon.open.app_error",
+    "translation": "Não foi possível abrir arquivo de imagem"
+  },
+  {
+    "id": "api.team.set_team_icon.parse.app_error",
+    "translation": "Não foi possível processar o formulário multipart"
+  },
+  {
+    "id": "api.team.set_team_icon.storage.app_error",
+    "translation": "Não é possível enviar o ícone para equipe. Armazenamento de imagem não está configurado."
+  },
+  {
+    "id": "api.team.set_team_icon.too_large.app_error",
+    "translation": "Não é possível enviar o ícone para equipe. Arquivo muito grande."
+  },
+  {
+    "id": "api.team.set_team_icon.write_file.app_error",
+    "translation": "Não é possível salvar o ícone da equipe"
+  },
+  {
     "id": "api.team.signup_team.email_disabled.app_error",
     "translation": "Inscrição com e-mail na equipe está desativado."
   },
@@ -2719,10 +2823,6 @@
     "translation": "O link de inscrição não parece ser válido"
   },
   {
-    "id": "api.user.create_user.signup_link_mismatched_invite_id.app_error",
-    "translation": "O link de inscrição não parece estar válido"
-  },
-  {
     "id": "api.user.create_user.team_name.app_error",
     "translation": "Inválido nome de equipe"
   },
@@ -3080,7 +3180,7 @@
   },
   {
     "id": "api.webhook.incoming.error",
-    "translation": "Could not decode the multipart payload of incoming webhook."
+    "translation": "Não foi possível decodificar a carga multiparte do webhook de entrada."
   },
   {
     "id": "api.webhook.init.debug",
@@ -3647,6 +3747,10 @@
     "translation": "Não foi possível ativar o plugin extraído. O plugin já pode existir e estar ativado."
   },
   {
+    "id": "app.plugin.cluster.save_config.app_error",
+    "translation": "A configuração de plugin no seu arquivo config.json deve ser atualizada manualmente quando usando ReadOnlyConfig ativo no cluster."
+  },
+  {
     "id": "app.plugin.config.app_error",
     "translation": "Falha ao salvar o estado do plugin na configuração"
   },
@@ -3656,7 +3760,7 @@
   },
   {
     "id": "app.plugin.disabled.app_error",
-    "translation": "Plugins have been disabled. Please check your logs for details."
+    "translation": "Os plugins foram desativados. Verifique os seus logs para obter detalhes."
   },
   {
     "id": "app.plugin.extract.app_error",
@@ -3707,8 +3811,24 @@
     "translation": "Plugins e/ou envio de plugin foi desabilitado."
   },
   {
+    "id": "app.role.check_roles_exist.role_not_found",
+    "translation": "A função fornecida não existe"
+  },
+  {
     "id": "app.team.join_user_to_team.max_accounts.app_error",
     "translation": "Esta equipe alcançou o número máximo de contas permitidas. Contate o administrador do sistema para ajustar um limite maior."
+  },
+  {
+    "id": "app.timezones.failed_deserialize.app_error",
+    "translation": "Falha ao desserializar configuração do Fuso horário arquivo={{.Filename}}, erro={{.Error}}"
+  },
+  {
+    "id": "app.timezones.load_config.app_error",
+    "translation": "Configuração do fuso horário não existe arquivo={{.Filename}}"
+  },
+  {
+    "id": "app.timezones.read_config.app_error",
+    "translation": "Falha ao ler a configuração de Fuso horário arquivo={{.Filename}}, erro={{.Error}}"
   },
   {
     "id": "app.user_access_token.disabled",
@@ -4192,15 +4312,15 @@
   },
   {
     "id": "ent.migration.migratetosaml.email_already_used_by_other_user",
-    "translation": "Email already used by another SAML user."
+    "translation": "Email já usado por outro usuário SAML."
   },
   {
     "id": "ent.migration.migratetosaml.user_not_found_in_users_mapping_file",
-    "translation": "User not found in the users file."
+    "translation": "Usuário não encontrado no arquivo de usuários."
   },
   {
     "id": "ent.migration.migratetosaml.username_already_used_by_other_user",
-    "translation": "Username already used by another Mattermost user."
+    "translation": "Nome de usuário já usado por outro usuário Mattermost."
   },
   {
     "id": "ent.saml.attribute.app_error",
@@ -4465,6 +4585,10 @@
   {
     "id": "model.channel_member.is_valid.email_value.app_error",
     "translation": "Valor de notificação de email inválida"
+  },
+  {
+    "id": "model.channel_member.is_valid.mute_value.app_error",
+    "translation": "Valor de muting inválido"
   },
   {
     "id": "model.channel_member.is_valid.notify_level.app_error",
@@ -4904,7 +5028,11 @@
   },
   {
     "id": "model.config.is_valid.message_export.export_type.app_error",
-    "translation": "Message export job ExportFormat must be one of either 'actiance' or 'globalrelay'"
+    "translation": "Na tarefa de exportação de mensagens o ExportFormat deve ser 'actiance' ou 'globalrelay'"
+  },
+  {
+    "id": "model.config.is_valid.message_export.export_type.app_error",
+    "translation": "Na tarefa de exportação de mensagens o ExportFormat deve ser 'actiance' ou 'globalrelay'"
   },
   {
     "id": "model.config.is_valid.message_export.file_location.app_error",
@@ -4915,8 +5043,28 @@
     "translation": "Trabalho de exportação de mensagens FileLocation deve ser um subdiretório de FileSettings.Directory"
   },
   {
+    "id": "model.config.is_valid.message_export.global_relay.config_missing.app_error",
+    "translation": "Tarefa de exportação de mensagem está definido ExportFormat para 'globalrelay', mas estão faltando GlobalRelaySettings"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.customer_type.app_error",
+    "translation": "Exportação de mensagem GlobalRelaySettings.CustomerType deve ser definido como 'A9' ou 'A10'"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.email_address.app_error",
+    "translation": "Na tarefa de exportação de mensagens o GlobalRelaySettings.EmailAddress deve ser um endereço de email válido"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_password.app_error",
+    "translation": "Tarefa de exportação de mensagem GlobalRelaySettings.SmtpPassword deve ser definido"
+  },
+  {
+    "id": "model.config.is_valid.message_export.global_relay.smtp_username.app_error",
+    "translation": "Tarefa de exportação de mensagem GlobalRelaySettings.SmtpUsername deve ser definido"
+  },
+  {
     "id": "model.config.is_valid.message_export.global_relay_email_address.app_error",
-    "translation": "Message export job GlobalRelayEmailAddress must be set to a valid email address"
+    "translation": "Na tarefa de exportação de mensagens o GlobalRelayEmailAddress deve ser um endereço de email válido"
   },
   {
     "id": "model.config.is_valid.password_length.app_error",
@@ -5048,7 +5196,7 @@
   },
   {
     "id": "model.config.is_valid.websocket_url.app_error",
-    "translation": "A URL Websocket do WebRTC Gateway deve ser uma URL válida e começar com ws:// ou wss://."
+    "translation": "A URL Websocket deve ser uma URL válida e começar com ws:// ou wss://."
   },
   {
     "id": "model.config.is_valid.write_timeout.app_error",
@@ -6343,6 +6491,18 @@
     "translation": "Não foi possível selecionar as postagens para deletar o usuário (muitos), por favor, re-executar"
   },
   {
+    "id": "store.sql_post.query_max_post_size.error",
+    "translation": "Não foi possível determinar o tamanho máximo de postagem suportado"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.max_post_size_bytes",
+    "translation": "Post.Message suporta no máximo %d caracteres (%d bytes)"
+  },
+  {
+    "id": "store.sql_post.query_max_post_size.unrecognized_driver",
+    "translation": "Nenhuma implementação encontrada para determinar o tamanho máximo de postagem suportado"
+  },
+  {
     "id": "store.sql_post.save.app_error",
     "translation": "Não foi possível salvar o Post"
   },
@@ -6469,6 +6629,30 @@
   {
     "id": "store.sql_reaction.save.save.app_error",
     "translation": "Não é possível salvar a reação"
+  },
+  {
+    "id": "store.sql_role.get.app_error",
+    "translation": "Não foi possível obter a função"
+  },
+  {
+    "id": "store.sql_role.get_by_name.app_error",
+    "translation": "Não foi possível obter a função"
+  },
+  {
+    "id": "store.sql_role.get_by_names.app_error",
+    "translation": "Não foi possível obter as funções"
+  },
+  {
+    "id": "store.sql_role.save.insert.app_error",
+    "translation": "Não foi possível salvar a função"
+  },
+  {
+    "id": "store.sql_role.save.invalid_role.app_error",
+    "translation": "A função não é válida"
+  },
+  {
+    "id": "store.sql_role.save.update.app_error",
+    "translation": "Não foi possível atualizar a função"
   },
   {
     "id": "store.sql_session.analytics_session_count.app_error",
@@ -7136,7 +7320,7 @@
   },
   {
     "id": "utils.mail.sendMail.attachments.write_error",
-    "translation": "Failed to write attachment to email"
+    "translation": "Falha ao escrever o anexo para o e-mail"
   },
   {
     "id": "utils.mail.send_mail.close.app_error",

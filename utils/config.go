@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -51,21 +50,17 @@ func FindConfigFile(fileName string) (path string) {
 	return ""
 }
 
+// FindDir looks for the given directory in nearby ancestors, falling back to `./` if not found.
 func FindDir(dir string) (string, bool) {
-	fileName := "."
-	found := false
-	if _, err := os.Stat("./" + dir + "/"); err == nil {
-		fileName, _ = filepath.Abs("./" + dir + "/")
-		found = true
-	} else if _, err := os.Stat("../" + dir + "/"); err == nil {
-		fileName, _ = filepath.Abs("../" + dir + "/")
-		found = true
-	} else if _, err := os.Stat("../../" + dir + "/"); err == nil {
-		fileName, _ = filepath.Abs("../../" + dir + "/")
-		found = true
+	for _, parent := range []string{".", "..", "../.."} {
+		foundDir, err := filepath.Abs(filepath.Join(parent, dir))
+		if err != nil {
+			continue
+		} else if _, err := os.Stat(foundDir); err == nil {
+			return foundDir, true
+		}
 	}
-
-	return fileName + "/", found
+	return "./", false
 }
 
 func DisableDebugLogForTest() {
@@ -88,13 +83,15 @@ func ConfigureCmdLineLog() {
 	ConfigureLog(&ls)
 }
 
+// ConfigureLog enables and configures logging.
+//
+// Note that it is not currently possible to disable filters nor to modify previously enabled
+// filters, given the lack of concurrency guarantees from the underlying l4g library.
+//
 // TODO: this code initializes console and file logging. It will eventually be replaced by JSON logging in logger/logger.go
 // See PLT-3893 for more information
 func ConfigureLog(s *model.LogSettings) {
-
-	l4g.Close()
-
-	if s.EnableConsole {
+	if _, alreadySet := l4g.Global["stdout"]; !alreadySet && s.EnableConsole {
 		level := l4g.DEBUG
 		if s.ConsoleLevel == "INFO" {
 			level = l4g.INFO
@@ -109,8 +106,7 @@ func ConfigureLog(s *model.LogSettings) {
 		l4g.AddFilter("stdout", level, lw)
 	}
 
-	if s.EnableFile {
-
+	if _, alreadySet := l4g.Global["file"]; !alreadySet && s.EnableFile {
 		var fileFormat = s.FileFormat
 
 		if fileFormat == "" {
@@ -136,11 +132,10 @@ func ConfigureLog(s *model.LogSettings) {
 
 func GetLogFileLocation(fileLocation string) string {
 	if fileLocation == "" {
-		logDir, _ := FindDir("logs")
-		return logDir + LOG_FILENAME
-	} else {
-		return path.Join(fileLocation, LOG_FILENAME)
+		fileLocation, _ = FindDir("logs")
 	}
+
+	return filepath.Join(fileLocation, LOG_FILENAME)
 }
 
 func SaveConfig(fileName string, config *model.Config) *model.AppError {
@@ -343,8 +338,8 @@ func GenerateClientConfig(c *model.Config, diagnosticId string, license *model.L
 	props["SiteURL"] = strings.TrimRight(*c.ServiceSettings.SiteURL, "/")
 	props["WebsocketURL"] = strings.TrimRight(*c.ServiceSettings.WebsocketURL, "/")
 	props["SiteName"] = c.TeamSettings.SiteName
+	props["EnableTeamCreation"] = strconv.FormatBool(*c.TeamSettings.EnableTeamCreation)
 	props["EnableAPIv3"] = strconv.FormatBool(*c.ServiceSettings.EnableAPIv3)
-	props["EnableTeamCreation"] = strconv.FormatBool(c.TeamSettings.EnableTeamCreation)
 	props["EnableUserCreation"] = strconv.FormatBool(c.TeamSettings.EnableUserCreation)
 	props["EnableOpenServer"] = strconv.FormatBool(*c.TeamSettings.EnableOpenServer)
 	props["RestrictDirectMessage"] = *c.TeamSettings.RestrictDirectMessage
@@ -388,6 +383,7 @@ func GenerateClientConfig(c *model.Config, diagnosticId string, license *model.L
 	props["EnableTutorial"] = strconv.FormatBool(*c.ServiceSettings.EnableTutorial)
 	props["ExperimentalEnableDefaultChannelLeaveJoinMessages"] = strconv.FormatBool(*c.ServiceSettings.ExperimentalEnableDefaultChannelLeaveJoinMessages)
 	props["ExperimentalGroupUnreadChannels"] = *c.ServiceSettings.ExperimentalGroupUnreadChannels
+	props["ExperimentalTimezone"] = strconv.FormatBool(*c.DisplaySettings.ExperimentalTimezone)
 
 	props["SendEmailNotifications"] = strconv.FormatBool(c.EmailSettings.SendEmailNotifications)
 	props["SendPushNotifications"] = strconv.FormatBool(*c.EmailSettings.SendPushNotifications)
@@ -414,8 +410,6 @@ func GenerateClientConfig(c *model.Config, diagnosticId string, license *model.L
 	props["SupportEmail"] = *c.SupportSettings.SupportEmail
 
 	props["EnableFileAttachments"] = strconv.FormatBool(*c.FileSettings.EnableFileAttachments)
-	props["EnableMobileFileUpload"] = strconv.FormatBool(*c.FileSettings.EnableMobileUpload)
-	props["EnableMobileFileDownload"] = strconv.FormatBool(*c.FileSettings.EnableMobileDownload)
 	props["EnablePublicLink"] = strconv.FormatBool(c.FileSettings.EnablePublicLink)
 
 	props["WebsocketPort"] = fmt.Sprintf("%v", *c.ServiceSettings.WebsocketPort)
@@ -449,6 +443,56 @@ func GenerateClientConfig(c *model.Config, diagnosticId string, license *model.L
 	hasImageProxy := c.ServiceSettings.ImageProxyType != nil && *c.ServiceSettings.ImageProxyType != "" && c.ServiceSettings.ImageProxyURL != nil && *c.ServiceSettings.ImageProxyURL != ""
 	props["HasImageProxy"] = strconv.FormatBool(hasImageProxy)
 
+	// Set default values for all options that require a license.
+	props["ExperimentalTownSquareIsReadOnly"] = "false"
+	props["ExperimentalEnableAuthenticationTransfer"] = "true"
+	props["EnableCustomBrand"] = "false"
+	props["CustomBrandText"] = ""
+	props["CustomDescriptionText"] = ""
+	props["EnableLdap"] = "false"
+	props["LdapLoginFieldName"] = ""
+	props["LdapNicknameAttributeSet"] = "false"
+	props["LdapFirstNameAttributeSet"] = "false"
+	props["LdapLastNameAttributeSet"] = "false"
+	props["LdapLoginButtonColor"] = ""
+	props["LdapLoginButtonBorderColor"] = ""
+	props["LdapLoginButtonTextColor"] = ""
+	props["EnableMultifactorAuthentication"] = "false"
+	props["EnforceMultifactorAuthentication"] = "false"
+	props["EnableCompliance"] = "false"
+	props["EnableMobileFileDownload"] = "true"
+	props["EnableMobileFileUpload"] = "true"
+	props["EnableSaml"] = "false"
+	props["SamlLoginButtonText"] = ""
+	props["SamlFirstNameAttributeSet"] = "false"
+	props["SamlLastNameAttributeSet"] = "false"
+	props["SamlNicknameAttributeSet"] = "false"
+	props["SamlLoginButtonColor"] = ""
+	props["SamlLoginButtonBorderColor"] = ""
+	props["SamlLoginButtonTextColor"] = ""
+	props["EnableCluster"] = "false"
+	props["EnableMetrics"] = "false"
+	props["EnableSignUpWithGoogle"] = "false"
+	props["EnableSignUpWithOffice365"] = "false"
+	props["PasswordMinimumLength"] = "0"
+	props["PasswordRequireLowercase"] = "false"
+	props["PasswordRequireUppercase"] = "false"
+	props["PasswordRequireNumber"] = "false"
+	props["PasswordRequireSymbol"] = "false"
+	props["EnableBanner"] = "false"
+	props["BannerText"] = ""
+	props["BannerColor"] = ""
+	props["BannerTextColor"] = ""
+	props["AllowBannerDismissal"] = "false"
+	props["EnableThemeSelection"] = "true"
+	props["DefaultTheme"] = ""
+	props["AllowCustomThemes"] = "true"
+	props["AllowedThemes"] = ""
+	props["DataRetentionEnableMessageDeletion"] = "false"
+	props["DataRetentionMessageRetentionDays"] = "0"
+	props["DataRetentionEnableFileDeletion"] = "false"
+	props["DataRetentionFileRetentionDays"] = "0"
+
 	if license != nil {
 		props["ExperimentalTownSquareIsReadOnly"] = strconv.FormatBool(*c.TeamSettings.ExperimentalTownSquareIsReadOnly)
 		props["ExperimentalEnableAuthenticationTransfer"] = strconv.FormatBool(*c.ServiceSettings.ExperimentalEnableAuthenticationTransfer)
@@ -477,6 +521,8 @@ func GenerateClientConfig(c *model.Config, diagnosticId string, license *model.L
 
 		if *license.Features.Compliance {
 			props["EnableCompliance"] = strconv.FormatBool(*c.ComplianceSettings.Enable)
+			props["EnableMobileFileDownload"] = strconv.FormatBool(*c.FileSettings.EnableMobileDownload)
+			props["EnableMobileFileUpload"] = strconv.FormatBool(*c.FileSettings.EnableMobileUpload)
 		}
 
 		if *license.Features.SAML {

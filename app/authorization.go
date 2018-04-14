@@ -12,12 +12,7 @@ import (
 )
 
 func (a *App) SessionHasPermissionTo(session model.Session, permission *model.Permission) bool {
-	if !a.CheckIfRolesGrantPermission(session.GetUserRoles(), permission.Id) {
-		a.ClearSessionCacheForUser(session.UserId)
-		return false
-	}
-
-	return true
+	return a.RolesGrantPermission(session.GetUserRoles(), permission.Id)
 }
 
 /// DO NOT USE: LEGACY
@@ -28,12 +23,12 @@ func (a *App) SessionHasPermissionToTeam(session model.Session, teamId string, p
 
 	teamMember := session.GetTeamByTeamId(teamId)
 	if teamMember != nil {
-		if a.CheckIfRolesGrantPermission(teamMember.GetRoles(), permission.Id) {
+		if a.RolesGrantPermission(teamMember.GetRoles(), permission.Id) {
 			return true
 		}
 	}
 
-	return a.CheckIfRolesGrantPermission(session.GetUserRoles(), permission.Id)
+	return a.RolesGrantPermission(session.GetUserRoles(), permission.Id)
 }
 
 func (a *App) SessionHasPermissionToChannel(session model.Session, channelId string, permission *model.Permission) bool {
@@ -48,7 +43,7 @@ func (a *App) SessionHasPermissionToChannel(session model.Session, channelId str
 		ids := cmcresult.Data.(map[string]string)
 		if roles, ok := ids[channelId]; ok {
 			channelRoles = strings.Fields(roles)
-			if a.CheckIfRolesGrantPermission(channelRoles, permission.Id) {
+			if a.RolesGrantPermission(channelRoles, permission.Id) {
 				return true
 			}
 		}
@@ -69,7 +64,7 @@ func (a *App) SessionHasPermissionToChannelByPost(session model.Session, postId 
 	if result := <-a.Srv.Store.Channel().GetMemberForPost(postId, session.UserId); result.Err == nil {
 		channelMember = result.Data.(*model.ChannelMember)
 
-		if a.CheckIfRolesGrantPermission(channelMember.GetRoles(), permission.Id) {
+		if a.RolesGrantPermission(channelMember.GetRoles(), permission.Id) {
 			return true
 		}
 	}
@@ -119,7 +114,7 @@ func (a *App) HasPermissionTo(askingUserId string, permission *model.Permission)
 
 	roles := user.GetRoles()
 
-	return a.CheckIfRolesGrantPermission(roles, permission.Id)
+	return a.RolesGrantPermission(roles, permission.Id)
 }
 
 func (a *App) HasPermissionToTeam(askingUserId string, teamId string, permission *model.Permission) bool {
@@ -134,7 +129,7 @@ func (a *App) HasPermissionToTeam(askingUserId string, teamId string, permission
 
 	roles := teamMember.GetRoles()
 
-	if a.CheckIfRolesGrantPermission(roles, permission.Id) {
+	if a.RolesGrantPermission(roles, permission.Id) {
 		return true
 	}
 
@@ -149,7 +144,7 @@ func (a *App) HasPermissionToChannel(askingUserId string, channelId string, perm
 	channelMember, err := a.GetChannelMember(channelId, askingUserId)
 	if err == nil {
 		roles := channelMember.GetRoles()
-		if a.CheckIfRolesGrantPermission(roles, permission.Id) {
+		if a.RolesGrantPermission(roles, permission.Id) {
 			return true
 		}
 	}
@@ -168,7 +163,7 @@ func (a *App) HasPermissionToChannelByPost(askingUserId string, postId string, p
 	if result := <-a.Srv.Store.Channel().GetMemberForPost(postId, askingUserId); result.Err == nil {
 		channelMember = result.Data.(*model.ChannelMember)
 
-		if a.CheckIfRolesGrantPermission(channelMember.GetRoles(), permission.Id) {
+		if a.RolesGrantPermission(channelMember.GetRoles(), permission.Id) {
 			return true
 		}
 	}
@@ -181,17 +176,33 @@ func (a *App) HasPermissionToChannelByPost(askingUserId string, postId string, p
 	return a.HasPermissionTo(askingUserId, permission)
 }
 
-func (a *App) CheckIfRolesGrantPermission(roles []string, permissionId string) bool {
-	for _, roleId := range roles {
-		if role := a.Role(roleId); role == nil {
-			l4g.Debug("Bad role in system " + roleId)
-			return false
-		} else {
-			permissions := role.Permissions
-			for _, permission := range permissions {
-				if permission == permissionId {
-					return true
-				}
+func (a *App) HasPermissionToUser(askingUserId string, userId string) bool {
+	if askingUserId == userId {
+		return true
+	}
+
+	if a.HasPermissionTo(askingUserId, model.PERMISSION_EDIT_OTHER_USERS) {
+		return true
+	}
+
+	return false
+}
+
+func (a *App) RolesGrantPermission(roleNames []string, permissionId string) bool {
+	roles, err := a.GetRolesByNames(roleNames)
+	if err != nil {
+		// This should only happen if something is very broken. We can't realistically
+		// recover the situation, so deny permission and log an error.
+		l4g.Error("Failed to get roles from database with role names: " + strings.Join(roleNames, ","))
+		l4g.Error(err)
+		return false
+	}
+
+	for _, role := range roles {
+		permissions := role.Permissions
+		for _, permission := range permissions {
+			if permission == permissionId {
+				return true
 			}
 		}
 	}

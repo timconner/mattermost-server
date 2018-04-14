@@ -23,12 +23,14 @@ var settings model.LocalizationSettings
 // this functions loads translations from filesystem
 // and assign english while loading server config
 func TranslationsPreInit() error {
+	// Set T even if we fail to load the translations. Lots of shutdown handling code will
+	// segfault trying to handle the error, and the untranslated IDs are strictly better.
+	T = TfuncWithFallback("en")
+	TDefault = TfuncWithFallback("en")
+
 	if err := InitTranslationsWithDir("i18n"); err != nil {
 		return err
 	}
-
-	T = TfuncWithFallback("en")
-	TDefault = TfuncWithFallback("en")
 
 	return nil
 }
@@ -51,9 +53,9 @@ func InitTranslationsWithDir(dir string) error {
 	for _, f := range files {
 		if filepath.Ext(f.Name()) == ".json" {
 			filename := f.Name()
-			locales[strings.Split(filename, ".")[0]] = i18nDirectory + filename
+			locales[strings.Split(filename, ".")[0]] = filepath.Join(i18nDirectory, filename)
 
-			if err := i18n.LoadTranslationFile(i18nDirectory + filename); err != nil {
+			if err := i18n.LoadTranslationFile(filepath.Join(i18nDirectory, filename)); err != nil {
 				return err
 			}
 		}
@@ -94,7 +96,7 @@ func GetUserTranslations(locale string) i18n.TranslateFunc {
 func GetTranslationsAndLocale(w http.ResponseWriter, r *http.Request) (i18n.TranslateFunc, string) {
 	// This is for checking against locales like pt_BR or zn_CN
 	headerLocaleFull := strings.Split(r.Header.Get("Accept-Language"), ",")[0]
-	// This is for checking agains locales like en, es
+	// This is for checking against locales like en, es
 	headerLocale := strings.Split(strings.Split(r.Header.Get("Accept-Language"), ",")[0], "-")[0]
 	defaultLocale := *settings.DefaultClientLocale
 	if locales[headerLocaleFull] != "" {

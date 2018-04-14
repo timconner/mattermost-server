@@ -152,6 +152,8 @@ const (
 	PLUGIN_SETTINGS_DEFAULT_DIRECTORY        = "./plugins"
 	PLUGIN_SETTINGS_DEFAULT_CLIENT_DIRECTORY = "./client/plugins"
 
+	TIMEZONE_SETTINGS_DEFAULT_SUPPORTED_TIMEZONES_PATH = "timezones.json"
+
 	COMPLIANCE_EXPORT_TYPE_ACTIANCE    = "actiance"
 	COMPLIANCE_EXPORT_TYPE_GLOBALRELAY = "globalrelay"
 	GLOBALRELAY_CUSTOMER_TYPE_A9       = "A9"
@@ -424,7 +426,7 @@ func (s *ServiceSettings) SetDefaults() {
 	}
 
 	if s.PostEditTimeLimit == nil {
-		s.PostEditTimeLimit = NewInt(300)
+		s.PostEditTimeLimit = NewInt(-1)
 	}
 
 	if s.EnablePreviewFeatures == nil {
@@ -967,7 +969,7 @@ func (s *ThemeSettings) SetDefaults() {
 type TeamSettings struct {
 	SiteName                            string
 	MaxUsersPerTeam                     *int
-	EnableTeamCreation                  bool
+	EnableTeamCreation                  *bool
 	EnableUserCreation                  bool
 	EnableOpenServer                    *bool
 	RestrictCreationToDomains           string
@@ -1090,6 +1092,10 @@ func (s *TeamSettings) SetDefaults() {
 	if s.ExperimentalPrimaryTeam == nil {
 		s.ExperimentalPrimaryTeam = NewString("")
 	}
+
+	if s.EnableTeamCreation == nil {
+		s.EnableTeamCreation = NewBool(true)
+	}
 }
 
 type ClientRequirements struct {
@@ -1124,7 +1130,7 @@ type LdapSettings struct {
 	IdAttribute        *string
 	PositionAttribute  *string
 
-	// Syncronization
+	// Synchronization
 	SyncIntervalMinutes *int
 
 	// Advanced
@@ -1291,6 +1297,9 @@ type SamlSettings struct {
 	IdpDescriptorUrl            *string
 	AssertionConsumerServiceURL *string
 
+	ScopingIDPProviderId *string
+	ScopingIDPName       *string
+
 	IdpCertificateFile    *string
 	PublicCertificateFile *string
 	PrivateKeyFile        *string
@@ -1350,6 +1359,14 @@ func (s *SamlSettings) SetDefaults() {
 
 	if s.AssertionConsumerServiceURL == nil {
 		s.AssertionConsumerServiceURL = NewString("")
+	}
+
+	if s.ScopingIDPProviderId == nil {
+		s.ScopingIDPProviderId = NewString("")
+	}
+
+	if s.ScopingIDPName == nil {
+		s.ScopingIDPName = NewString("")
 	}
 
 	if s.LoginButtonText == nil || *s.LoginButtonText == "" {
@@ -1697,6 +1714,26 @@ func (s *MessageExportSettings) SetDefaults() {
 	}
 }
 
+type DisplaySettings struct {
+	ExperimentalTimezone *bool
+}
+
+func (s *DisplaySettings) SetDefaults() {
+	if s.ExperimentalTimezone == nil {
+		s.ExperimentalTimezone = NewBool(false)
+	}
+}
+
+type TimezoneSettings struct {
+	SupportedTimezonesPath *string
+}
+
+func (s *TimezoneSettings) SetDefaults() {
+	if s.SupportedTimezonesPath == nil {
+		s.SupportedTimezonesPath = NewString(TIMEZONE_SETTINGS_DEFAULT_SUPPORTED_TIMEZONES_PATH)
+	}
+}
+
 type ConfigFunc func() *Config
 
 type Config struct {
@@ -1730,6 +1767,8 @@ type Config struct {
 	MessageExportSettings MessageExportSettings
 	JobSettings           JobSettings
 	PluginSettings        PluginSettings
+	DisplaySettings       DisplaySettings
+	TimezoneSettings      TimezoneSettings
 }
 
 func (o *Config) Clone() *Config {
@@ -1799,6 +1838,8 @@ func (o *Config) SetDefaults() {
 	o.JobSettings.SetDefaults()
 	o.WebrtcSettings.SetDefaults()
 	o.MessageExportSettings.SetDefaults()
+	o.TimezoneSettings.SetDefaults()
+	o.DisplaySettings.SetDefaults()
 }
 
 func (o *Config) IsValid() *AppError {

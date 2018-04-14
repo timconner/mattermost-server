@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -717,7 +718,7 @@ func CreateProfileImage(username string, userId string, initialFont string) ([]b
 	initial := string(strings.ToUpper(username)[0])
 
 	fontDir, _ := utils.FindDir("fonts")
-	fontBytes, err := ioutil.ReadFile(fontDir + initialFont)
+	fontBytes, err := ioutil.ReadFile(filepath.Join(fontDir, initialFont))
 	if err != nil {
 		return nil, model.NewAppError("CreateProfileImage", "api.user.create_profile_image.default_font.app_error", nil, err.Error(), http.StatusInternalServerError)
 	}
@@ -939,6 +940,8 @@ func (a *App) UpdateActive(user *model.User, active bool) (*model.User, *model.A
 			}
 		}
 
+		a.sendUpdatedUserEvent(*ruser)
+
 		return ruser, nil
 	}
 }
@@ -959,7 +962,7 @@ func (a *App) UpdateUserAsUser(user *model.User, asAdmin bool) (*model.User, *mo
 		return nil, err
 	}
 
-	a.sendUpdatedUserEvent(*updatedUser, asAdmin)
+	a.sendUpdatedUserEvent(*updatedUser)
 
 	return updatedUser, nil
 }
@@ -977,7 +980,7 @@ func (a *App) PatchUser(userId string, patch *model.UserPatch, asAdmin bool) (*m
 		return nil, err
 	}
 
-	a.sendUpdatedUserEvent(*updatedUser, asAdmin)
+	a.sendUpdatedUserEvent(*updatedUser)
 
 	return updatedUser, nil
 }
@@ -1006,8 +1009,8 @@ func (a *App) UpdateUserAuth(userId string, userAuth *model.UserAuth) (*model.Us
 	return userAuth, nil
 }
 
-func (a *App) sendUpdatedUserEvent(user model.User, asAdmin bool) {
-	a.SanitizeProfile(&user, asAdmin)
+func (a *App) sendUpdatedUserEvent(user model.User) {
+	a.SanitizeProfile(&user, false)
 
 	message := model.NewWebSocketEvent(model.WEBSOCKET_EVENT_USER_UPDATED, "", "", "", nil)
 	message.Add("user", user)
@@ -1235,6 +1238,10 @@ func (a *App) UpdateUserRoles(userId string, newRoles string, sendWebSocketEvent
 	var err *model.AppError
 	if user, err = a.GetUser(userId); err != nil {
 		err.StatusCode = http.StatusBadRequest
+		return nil, err
+	}
+
+	if err := a.CheckRolesExist(strings.Fields(newRoles)); err != nil {
 		return nil, err
 	}
 

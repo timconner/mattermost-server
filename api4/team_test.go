@@ -69,8 +69,14 @@ func TestCreateTeam(t *testing.T) {
 	_, resp = Client.CreateTeam(rteam)
 	CheckUnauthorizedStatus(t, resp)
 
-	// Update permission
-	th.App.UpdateConfig(func(cfg *model.Config) { cfg.TeamSettings.EnableTeamCreation = false })
+	// Check the appropriate permissions are enforced.
+	defaultRolePermissions := th.SaveDefaultRolePermissions()
+	defer func() {
+		th.RestoreDefaultRolePermissions(defaultRolePermissions)
+	}()
+
+	th.RemovePermissionFromRole(model.PERMISSION_CREATE_TEAM.Id, model.SYSTEM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_CREATE_TEAM.Id, model.SYSTEM_ADMIN_ROLE_ID)
 
 	th.LoginBasic()
 	_, resp = Client.CreateTeam(team)
@@ -567,6 +573,10 @@ func TestGetAllTeams(t *testing.T) {
 	_, resp := Client.CreateTeam(team)
 	CheckNoError(t, resp)
 
+	team2 := &model.Team{DisplayName: "Name2", Name: GenerateTestTeamName(), Email: th.GenerateTestEmail(), Type: model.TEAM_OPEN, AllowOpenInvite: true}
+	_, resp = Client.CreateTeam(team2)
+	CheckNoError(t, resp)
+
 	rrteams, resp := Client.GetAllTeams("", 0, 1)
 	CheckNoError(t, resp)
 
@@ -609,6 +619,17 @@ func TestGetAllTeams(t *testing.T) {
 
 	if len(rrteams2) != 0 {
 		t.Fatal("wrong number of teams - should be 0")
+	}
+
+	rrteams, resp = Client.GetAllTeams("", 0, 2)
+	CheckNoError(t, resp)
+	rrteams2, resp = Client.GetAllTeams("", 1, 2)
+	CheckNoError(t, resp)
+
+	for _, t1 := range rrteams {
+		for _, t2 := range rrteams2 {
+			assert.NotEqual(t, t1.Id, t2.Id, "different pages should not have the same teams")
+		}
 	}
 
 	Client.Logout()
@@ -1140,6 +1161,17 @@ func TestGetTeamMembers(t *testing.T) {
 		t.Fatal("should be no member")
 	}
 
+	rmembers, resp = Client.GetTeamMembers(team.Id, 0, 2, "")
+	CheckNoError(t, resp)
+	rmembers2, resp := Client.GetTeamMembers(team.Id, 1, 2, "")
+	CheckNoError(t, resp)
+
+	for _, tm1 := range rmembers {
+		for _, tm2 := range rmembers2 {
+			assert.NotEqual(t, tm1.UserId+tm1.TeamId, tm2.UserId+tm2.TeamId, "different pages should not have the same members")
+		}
+	}
+
 	_, resp = Client.GetTeamMembers("junk", 0, 100, "")
 	CheckBadRequestStatus(t, resp)
 
@@ -1288,16 +1320,18 @@ func TestAddTeamMember(t *testing.T) {
 
 	Client.Logout()
 
+	// Check the appropriate permissions are enforced.
+	defaultRolePermissions := th.SaveDefaultRolePermissions()
+	defer func() {
+		th.RestoreDefaultRolePermissions(defaultRolePermissions)
+	}()
+
 	// Set the config so that only team admins can add a user to a team.
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictTeamInvite = model.PERMISSIONS_TEAM_ADMIN })
-	th.LoginBasic()
+	th.AddPermissionToRole(model.PERMISSION_INVITE_USER.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_ADD_USER_TO_TEAM.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_INVITE_USER.Id, model.TEAM_USER_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_ADD_USER_TO_TEAM.Id, model.TEAM_USER_ROLE_ID)
 
-	// Test without the EE license to see that the permission restriction is ignored.
-	_, resp = Client.AddTeamMember(team.Id, otherUser.Id)
-	CheckNoError(t, resp)
-
-	// Add an EE license.
-	th.App.SetLicense(model.NewTestLicense())
 	th.LoginBasic()
 
 	// Check that a regular user can't add someone to the team.
@@ -1307,37 +1341,25 @@ func TestAddTeamMember(t *testing.T) {
 	// Update user to team admin
 	th.UpdateUserToTeamAdmin(th.BasicUser, th.BasicTeam)
 	th.App.InvalidateAllCaches()
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictTeamInvite = model.PERMISSIONS_TEAM_ADMIN })
-	th.App.SetLicense(model.NewTestLicense())
 	th.LoginBasic()
 
 	// Should work as a team admin.
 	_, resp = Client.AddTeamMember(team.Id, otherUser.Id)
 	CheckNoError(t, resp)
 
-	// Change permission level to System Admin
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictTeamInvite = model.PERMISSIONS_SYSTEM_ADMIN })
+	// Change permission level to team user
+	th.AddPermissionToRole(model.PERMISSION_INVITE_USER.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_ADD_USER_TO_TEAM.Id, model.TEAM_USER_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_INVITE_USER.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_ADD_USER_TO_TEAM.Id, model.TEAM_ADMIN_ROLE_ID)
 
-	// Should not work as team admin.
-	_, resp = Client.AddTeamMember(team.Id, otherUser.Id)
-	CheckForbiddenStatus(t, resp)
-
-	// Should work as system admin.
-	_, resp = th.SystemAdminClient.AddTeamMember(team.Id, otherUser.Id)
-	CheckNoError(t, resp)
-
-	// Change permission level to All
 	th.UpdateUserToNonTeamAdmin(th.BasicUser, th.BasicTeam)
 	th.App.InvalidateAllCaches()
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictTeamInvite = model.PERMISSIONS_ALL })
-	th.App.SetLicense(model.NewTestLicense())
 	th.LoginBasic()
 
 	// Should work as a regular user.
 	_, resp = Client.AddTeamMember(team.Id, otherUser.Id)
 	CheckNoError(t, resp)
-
-	th.LoginBasic()
 
 	// by hash and data
 	Client.Login(otherUser.Email, otherUser.Password)
@@ -1345,7 +1367,6 @@ func TestAddTeamMember(t *testing.T) {
 	dataObject := make(map[string]string)
 	dataObject["time"] = fmt.Sprintf("%v", model.GetMillis())
 	dataObject["id"] = team.Id
-	dataObject["invite_id"] = team.InviteId
 
 	data := model.MapToJson(dataObject)
 	hashed := utils.HashSha256(fmt.Sprintf("%v:%v", data, th.App.Config().EmailSettings.InviteSalt))
@@ -1476,16 +1497,18 @@ func TestAddTeamMembers(t *testing.T) {
 
 	Client.Logout()
 
+	// Check the appropriate permissions are enforced.
+	defaultRolePermissions := th.SaveDefaultRolePermissions()
+	defer func() {
+		th.RestoreDefaultRolePermissions(defaultRolePermissions)
+	}()
+
 	// Set the config so that only team admins can add a user to a team.
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictTeamInvite = model.PERMISSIONS_TEAM_ADMIN })
-	th.LoginBasic()
+	th.AddPermissionToRole(model.PERMISSION_INVITE_USER.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_ADD_USER_TO_TEAM.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_INVITE_USER.Id, model.TEAM_USER_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_ADD_USER_TO_TEAM.Id, model.TEAM_USER_ROLE_ID)
 
-	// Test without the EE license to see that the permission restriction is ignored.
-	_, resp = Client.AddTeamMembers(team.Id, userList)
-	CheckNoError(t, resp)
-
-	// Add an EE license.
-	th.App.SetLicense(model.NewTestLicense())
 	th.LoginBasic()
 
 	// Check that a regular user can't add someone to the team.
@@ -1495,30 +1518,20 @@ func TestAddTeamMembers(t *testing.T) {
 	// Update user to team admin
 	th.UpdateUserToTeamAdmin(th.BasicUser, th.BasicTeam)
 	th.App.InvalidateAllCaches()
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictTeamInvite = model.PERMISSIONS_TEAM_ADMIN })
-	th.App.SetLicense(model.NewTestLicense())
 	th.LoginBasic()
 
 	// Should work as a team admin.
 	_, resp = Client.AddTeamMembers(team.Id, userList)
 	CheckNoError(t, resp)
 
-	// Change permission level to System Admin
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictTeamInvite = model.PERMISSIONS_SYSTEM_ADMIN })
+	// Change permission level to team user
+	th.AddPermissionToRole(model.PERMISSION_INVITE_USER.Id, model.TEAM_USER_ROLE_ID)
+	th.AddPermissionToRole(model.PERMISSION_ADD_USER_TO_TEAM.Id, model.TEAM_USER_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_INVITE_USER.Id, model.TEAM_ADMIN_ROLE_ID)
+	th.RemovePermissionFromRole(model.PERMISSION_ADD_USER_TO_TEAM.Id, model.TEAM_ADMIN_ROLE_ID)
 
-	// Should not work as team admin.
-	_, resp = Client.AddTeamMembers(team.Id, userList)
-	CheckForbiddenStatus(t, resp)
-
-	// Should work as system admin.
-	_, resp = th.SystemAdminClient.AddTeamMembers(team.Id, userList)
-	CheckNoError(t, resp)
-
-	// Change permission level to All
 	th.UpdateUserToNonTeamAdmin(th.BasicUser, th.BasicTeam)
 	th.App.InvalidateAllCaches()
-	th.App.UpdateConfig(func(cfg *model.Config) { *cfg.TeamSettings.RestrictTeamInvite = model.PERMISSIONS_ALL })
-	th.App.SetLicense(model.NewTestLicense())
 	th.LoginBasic()
 
 	// Should work as a regular user.
@@ -1662,7 +1675,7 @@ func TestUpdateTeamMemberRoles(t *testing.T) {
 	// Note from API v3
 	// Note to anyone who thinks this (above) test is wrong:
 	// This operation will not affect the system admin's permissions because they have global access to all teams.
-	// Their team level permissions are irrelavent. A team admin should be able to manage team level permissions.
+	// Their team level permissions are irrelevant. A team admin should be able to manage team level permissions.
 
 	// System admins should be able to manipulate permission no matter what their team level permissions are.
 	// system admin promotes user 2

@@ -1,5 +1,5 @@
-hash: 822849f55f8ab4b5c7545597b209edb6114bcf1009a552a9ee2503ff8d3fda09
-updated: 2018-03-07T13:01:49.575101746+01:00
+hash: 7d775d1a082e77da96bee605ebea97ba0230e270f7169fade50f64e5fe7842cb
+updated: 2018-04-05T18:31:48.282177324+02:00
 imports:
 - name: github.com/alecthomas/log4go
   version: 3fbce08846379ec7f4f6bc7fce6dd01ce28fae4c
@@ -63,6 +63,8 @@ imports:
   version: afe77393c53b66afe9212810d9b2013859d04ae6
 - name: github.com/gorilla/websocket
   version: 4ac909741dfa57448bfadfdbca0cf7eeaa68f0e2
+- name: github.com/hako/durafmt
+  version: 987f93c94e473e74aadc826871e61ae6b3360ebb
 - name: github.com/hashicorp/errwrap
   version: 7554cd9344cec97297fa6649b055a8c98c2a1e55
 - name: github.com/hashicorp/go-immutable-radix
@@ -115,6 +117,8 @@ imports:
   version: 995ddf2264c4ad45fbaf342f7500e4787ebae84a
 - name: github.com/mattermost/html2text
   version: d47a5532a7bc36ad7b2b8ec3eebe24e975154f94
+- name: github.com/mattermost/minio-go
+  version: e30d3b9eaff9a3fbfa74cda4c56cb22bec264ffa
 - name: github.com/mattermost/rsc
   version: bbaefb05eaa0389ea712340066837c8ce4d287f9
   subpackages:
@@ -128,7 +132,8 @@ imports:
 - name: github.com/miekg/dns
   version: 5364553f1ee9cddc7ac8b62dce148309c386695b
 - name: github.com/minio/minio-go
-  version: 706c81d3ee2a18cdd8239faf544de8a066e7e261
+  version: e30d3b9eaff9a3fbfa74cda4c56cb22bec264ffa
+  repo: https://github.com/mattermost/minio-go.git
   subpackages:
   - pkg/credentials
   - pkg/encrypt
@@ -140,8 +145,6 @@ imports:
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: github.com/mitchellh/mapstructure
   version: a4e142e9c047c904fa2f1e144d9a84e6133024bc
-- name: github.com/mssola/user_agent
-  version: 5243daae23628aeae9b6268541406bd5e95d5964
 - name: github.com/nicksnyder/go-i18n
   version: 0dc1626d56435e9d605a29875701721c54bc9bbd
   subpackages:

@@ -90,7 +90,6 @@ func NewSqlChannelStore(sqlStore SqlStore, metrics einterfaces.MetricsInterface)
 func (s SqlChannelStore) CreateIndexesIfNotExists() {
 	s.CreateIndexIfNotExists("idx_channels_team_id", "Channels", "TeamId")
 	s.CreateIndexIfNotExists("idx_channels_name", "Channels", "Name")
-	s.CreateIndexIfNotExists("idx_channels_displayname", "Channels", "DisplayName")
 	s.CreateIndexIfNotExists("idx_channels_update_at", "Channels", "UpdateAt")
 	s.CreateIndexIfNotExists("idx_channels_create_at", "Channels", "CreateAt")
 	s.CreateIndexIfNotExists("idx_channels_delete_at", "Channels", "DeleteAt")
@@ -751,7 +750,7 @@ func (s SqlChannelStore) SaveMember(member *model.ChannelMember) store.StoreChan
 					if err := transaction.Commit(); err != nil {
 						result.Err = model.NewAppError("SqlChannelStore.SaveMember", "store.sql_channel.save_member.commit_transaction.app_error", nil, err.Error(), http.StatusInternalServerError)
 					}
-					// If sucessfull record members have changed in channel
+					// If successfull record members have changed in channel
 					if mu := <-s.extraUpdated(channel); mu.Err != nil {
 						result.Err = mu.Err
 					}
@@ -1066,7 +1065,7 @@ func (s SqlChannelStore) RemoveMember(channelId string, userId string) store.Sto
 			if err != nil {
 				result.Err = model.NewAppError("SqlChannelStore.RemoveMember", "store.sql_channel.remove_member.app_error", nil, "channel_id="+channelId+", user_id="+userId+", "+err.Error(), http.StatusInternalServerError)
 			} else {
-				// If sucessfull record members have changed in channel
+				// If successfull record members have changed in channel
 				if mu := <-s.extraUpdated(channel); mu.Err != nil {
 					result.Err = mu.Err
 				}

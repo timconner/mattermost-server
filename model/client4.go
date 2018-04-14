@@ -310,8 +310,16 @@ func (c *Client4) GetJobsRoute() string {
 	return fmt.Sprintf("/jobs")
 }
 
+func (c *Client4) GetRolesRoute() string {
+	return fmt.Sprintf("/roles")
+}
+
 func (c *Client4) GetAnalyticsRoute() string {
 	return fmt.Sprintf("/analytics")
+}
+
+func (c *Client4) GetTimezonesRoute() string {
+	return fmt.Sprintf(c.GetSystemRoute() + "/timezones")
 }
 
 func (c *Client4) DoApiGet(url string, etag string) (*http.Response, *AppError) {
@@ -1740,6 +1748,17 @@ func (c *Client4) RemoveUserFromChannel(channelId, userId string) (bool, *Respon
 	}
 }
 
+// AutocompleteChannelsForTeam will return an ordered list of channels autocomplete suggestions
+func (c *Client4) AutocompleteChannelsForTeam(teamId, name string) (*ChannelList, *Response) {
+	query := fmt.Sprintf("?name=%v", name)
+	if r, err := c.DoApiGet(c.GetChannelsForTeamRoute(teamId)+"/autocomplete"+query, ""); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return ChannelListFromJson(r.Body), BuildResponse(r)
+	}
+}
+
 // Post Section
 
 // CreatePost creates a post based on the provided post struct.
@@ -2098,8 +2117,8 @@ func (c *Client4) GetPing() (string, *Response) {
 }
 
 // TestEmail will attempt to connect to the configured SMTP server.
-func (c *Client4) TestEmail() (bool, *Response) {
-	if r, err := c.DoApiPost(c.GetTestEmailRoute(), ""); err != nil {
+func (c *Client4) TestEmail(config *Config) (bool, *Response) {
+	if r, err := c.DoApiPost(c.GetTestEmailRoute(), config.ToJson()); err != nil {
 		return false, BuildErrorResponse(r, err)
 	} else {
 		defer closeBody(r)
@@ -3169,6 +3188,18 @@ func (c *Client4) DeleteReaction(reaction *Reaction) (bool, *Response) {
 	}
 }
 
+// Timezone Section
+
+// GetSupportedTimezone returns a page of supported timezones on the system.
+func (c *Client4) GetSupportedTimezone() (SupportedTimezones, *Response) {
+	if r, err := c.DoApiGet(c.GetTimezonesRoute(), ""); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return TimezonesFromJson(r.Body), BuildResponse(r)
+	}
+}
+
 // Open Graph Metadata Section
 
 // OpenGraph return the open graph metadata for a particular url if the site have the metadata
@@ -3233,6 +3264,48 @@ func (c *Client4) CancelJob(jobId string) (bool, *Response) {
 	} else {
 		defer closeBody(r)
 		return CheckStatusOK(r), BuildResponse(r)
+	}
+}
+
+// Roles Section
+
+// GetRole gets a single role by ID.
+func (c *Client4) GetRole(id string) (*Role, *Response) {
+	if r, err := c.DoApiGet(c.GetRolesRoute()+fmt.Sprintf("/%v", id), ""); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return RoleFromJson(r.Body), BuildResponse(r)
+	}
+}
+
+// GetRoleByName gets a single role by Name.
+func (c *Client4) GetRoleByName(name string) (*Role, *Response) {
+	if r, err := c.DoApiGet(c.GetRolesRoute()+fmt.Sprintf("/name/%v", name), ""); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return RoleFromJson(r.Body), BuildResponse(r)
+	}
+}
+
+// GetRolesByNames returns a list of roles based on the provided role names.
+func (c *Client4) GetRolesByNames(roleNames []string) ([]*Role, *Response) {
+	if r, err := c.DoApiPost(c.GetRolesRoute()+"/names", ArrayToJson(roleNames)); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return RoleListFromJson(r.Body), BuildResponse(r)
+	}
+}
+
+// PatchRole partially updates a role in the system. Any missing fields are not updated.
+func (c *Client4) PatchRole(roleId string, patch *RolePatch) (*Role, *Response) {
+	if r, err := c.DoApiPut(c.GetRolesRoute()+fmt.Sprintf("/%v/patch", roleId), patch.ToJson()); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return RoleFromJson(r.Body), BuildResponse(r)
 	}
 }
 

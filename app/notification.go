@@ -55,10 +55,15 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 
 	if channel.Type == model.CHANNEL_DIRECT {
 		var otherUserId string
-		if userIds := strings.Split(channel.Name, "__"); userIds[0] == post.UserId {
-			otherUserId = userIds[1]
-		} else {
-			otherUserId = userIds[0]
+
+		userIds := strings.Split(channel.Name, "__")
+
+		if userIds[0] != userIds[1] {
+			if userIds[0] == post.UserId {
+				otherUserId = userIds[1]
+			} else {
+				otherUserId = userIds[0]
+			}
 		}
 
 		if _, ok := profileMap[otherUserId]; ok {
@@ -69,7 +74,7 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 			mentionedUserIds[post.UserId] = true
 		}
 	} else {
-		keywords := a.GetMentionKeywordsInChannel(profileMap, post.Type != model.POST_HEADER_CHANGE && post.Type != model.POST_PURPOSE_CHANGE)
+		keywords := a.GetMentionKeywordsInChannel(profileMap, post.Type != model.POST_HEADER_CHANGE && post.Type != model.POST_PURPOSE_CHANGE && a.HasPermissionToTeam(sender.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM))
 
 		m := GetExplicitMentions(post.Message, keywords)
 		mentionedUserIds, hereNotification, channelNotification, allNotification = m.MentionedUserIds, m.HereMentioned, m.ChannelMentioned, m.AllMentioned
@@ -89,12 +94,12 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 			delete(mentionedUserIds, post.UserId)
 		}
 
-		if len(m.OtherPotentialMentions) > 0 {
+		if len(m.OtherPotentialMentions) > 0 && !post.IsSystemMessage() {
 			if result := <-a.Srv.Store.User().GetProfilesByUsernames(m.OtherPotentialMentions, team.Id); result.Err == nil {
 				outOfChannelMentions := result.Data.([]*model.User)
 				if channel.Type != model.CHANNEL_GROUP {
 					a.Go(func() {
-						a.sendOutOfChannelMentions(sender, post, channel.Type, outOfChannelMentions)
+						a.sendOutOfChannelMentions(sender, post, outOfChannelMentions)
 					})
 				}
 			}
@@ -158,6 +163,14 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 				}
 			}
 
+			// Remove the user as recipient when the user has muted the channel.
+			if channelMuted, ok := channelMemberNotifyPropsMap[id][model.MARK_UNREAD_NOTIFY_PROP]; ok {
+				if channelMuted == model.CHANNEL_MARK_UNREAD_MENTION {
+					l4g.Debug("Channel muted for user_id %v, channel_mute %v", id, channelMuted)
+					userAllowsEmails = false
+				}
+			}
+
 			//If email verification is required and user email is not verified don't send email.
 			if a.Config().EmailSettings.RequireEmailVerification && !profileMap[id].EmailVerified {
 				l4g.Error("Skipped sending notification email to %v, address not verified. [details: user_id=%v]", profileMap[id].Email, id)
@@ -182,40 +195,38 @@ func (a *App) SendNotifications(post *model.Post, team *model.Team, channel *mod
 		}
 	}
 
-	T := utils.GetUserTranslations(sender.Locale)
-
 	// If the channel has more than 1K users then @here is disabled
-	if hereNotification && int64(len(profileMap)) > *a.Config().TeamSettings.MaxNotificationsPerChannel {
+	if hereNotification && !a.HasPermissionToTeam(sender.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
 		hereNotification = false
 		a.SendEphemeralPost(
 			post.UserId,
 			&model.Post{
 				ChannelId: post.ChannelId,
-				Message:   T("api.post.disabled_here", map[string]interface{}{"Users": *a.Config().TeamSettings.MaxNotificationsPerChannel}),
+				Message:   "Only admins are allowed to notify all active users in the channel.",
 				CreateAt:  post.CreateAt + 1,
 			},
 		)
 	}
 
 	// If the channel has more than 1K users then @channel is disabled
-	if channelNotification && int64(len(profileMap)) > *a.Config().TeamSettings.MaxNotificationsPerChannel {
+	if channelNotification && !a.HasPermissionToTeam(sender.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
 		a.SendEphemeralPost(
 			post.UserId,
 			&model.Post{
 				ChannelId: post.ChannelId,
-				Message:   T("api.post.disabled_channel", map[string]interface{}{"Users": *a.Config().TeamSettings.MaxNotificationsPerChannel}),
+				Message:   "Only admins are allowed to notify all channel members.",
 				CreateAt:  post.CreateAt + 1,
 			},
 		)
 	}
 
 	// If the channel has more than 1K users then @all is disabled
-	if allNotification && int64(len(profileMap)) > *a.Config().TeamSettings.MaxNotificationsPerChannel {
+	if allNotification && !a.HasPermissionToTeam(sender.Id, channel.TeamId, model.PERMISSION_MANAGE_TEAM) {
 		a.SendEphemeralPost(
 			post.UserId,
 			&model.Post{
 				ChannelId: post.ChannelId,
-				Message:   T("api.post.disabled_all", map[string]interface{}{"Users": *a.Config().TeamSettings.MaxNotificationsPerChannel}),
+				Message:   "Only admins are allowed to notify all users.",
 				CreateAt:  post.CreateAt + 1,
 			},
 		)
@@ -741,7 +752,7 @@ func (a *App) getMobileAppSessions(userId string) ([]*model.Session, *model.AppE
 	}
 }
 
-func (a *App) sendOutOfChannelMentions(sender *model.User, post *model.Post, channelType string, users []*model.User) *model.AppError {
+func (a *App) sendOutOfChannelMentions(sender *model.User, post *model.Post, users []*model.User) *model.AppError {
 	if len(users) == 0 {
 		return nil
 	}
@@ -759,25 +770,16 @@ func (a *App) sendOutOfChannelMentions(sender *model.User, post *model.Post, cha
 
 	T := utils.GetUserTranslations(sender.Locale)
 
-	var localePhrase string
-	if channelType == model.CHANNEL_OPEN {
-		localePhrase = T("api.post.check_for_out_of_channel_mentions.link.public")
-	} else if channelType == model.CHANNEL_PRIVATE {
-		localePhrase = T("api.post.check_for_out_of_channel_mentions.link.private")
-	}
-
 	ephemeralPostId := model.NewId()
 	var message string
 	if len(users) == 1 {
 		message = T("api.post.check_for_out_of_channel_mentions.message.one", map[string]interface{}{
 			"Username": usernames[0],
-			"Phrase":   localePhrase,
 		})
 	} else {
 		message = T("api.post.check_for_out_of_channel_mentions.message.multiple", map[string]interface{}{
 			"Usernames":    strings.Join(usernames[:len(usernames)-1], ", @"),
 			"LastUsername": usernames[len(usernames)-1],
-			"Phrase":       localePhrase,
 		})
 	}
 
@@ -879,12 +881,23 @@ func GetExplicitMentions(message string, keywords map[string][]string) *Explicit
 			}
 
 			// remove trailing '.', as that is the end of a sentence
-			word = strings.TrimSuffix(word, ".")
-			if checkForMention(word) {
+			foundWithSuffix := false
+
+			for strings.HasSuffix(word, ".") {
+				word = strings.TrimSuffix(word, ".")
+				if checkForMention(word) {
+					foundWithSuffix = true
+					break
+				}
+			}
+
+			if foundWithSuffix {
 				continue
 			}
 
-			if strings.ContainsAny(word, ".-:") {
+			if _, ok := systemMentions[word]; !ok && strings.HasPrefix(word, "@") {
+				ret.OtherPotentialMentions = append(ret.OtherPotentialMentions, word[1:])
+			} else if strings.ContainsAny(word, ".-:") {
 				// This word contains a character that may be the end of a sentence, so split further
 				splitWords := strings.FieldsFunc(word, func(c rune) bool {
 					return c == '.' || c == '-' || c == ':'
@@ -895,15 +908,9 @@ func GetExplicitMentions(message string, keywords map[string][]string) *Explicit
 						continue
 					}
 					if _, ok := systemMentions[splitWord]; !ok && strings.HasPrefix(splitWord, "@") {
-						username := splitWord[1:]
-						ret.OtherPotentialMentions = append(ret.OtherPotentialMentions, username)
+						ret.OtherPotentialMentions = append(ret.OtherPotentialMentions, splitWord[1:])
 					}
 				}
-			}
-
-			if _, ok := systemMentions[word]; !ok && strings.HasPrefix(word, "@") {
-				username := word[1:]
-				ret.OtherPotentialMentions = append(ret.OtherPotentialMentions, username)
 			}
 		}
 	}
@@ -974,6 +981,13 @@ func DoesNotifyPropsAllowPushNotification(user *model.User, channelNotifyProps m
 	userNotifyProps := user.NotifyProps
 	userNotify := userNotifyProps[model.PUSH_NOTIFY_PROP]
 	channelNotify, ok := channelNotifyProps[model.PUSH_NOTIFY_PROP]
+
+	// If the channel is muted do not send push notifications
+	if channelMuted, ok := channelNotifyProps[model.MARK_UNREAD_NOTIFY_PROP]; ok {
+		if channelMuted == model.CHANNEL_MARK_UNREAD_MENTION {
+			return false
+		}
+	}
 
 	if post.IsSystemMessage() {
 		return false

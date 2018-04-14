@@ -44,6 +44,8 @@ const (
 	TRACK_CONFIG_PLUGIN         = "config_plugin"
 	TRACK_CONFIG_DATA_RETENTION = "config_data_retention"
 	TRACK_CONFIG_MESSAGE_EXPORT = "config_message_export"
+	TRACK_CONFIG_DISPLAY        = "config_display"
+	TRACK_CONFIG_TIMEZONE       = "config_timezone"
 
 	TRACK_ACTIVITY = "activity"
 	TRACK_LICENSE  = "license"
@@ -249,7 +251,7 @@ func (a *App) trackConfig() {
 
 	a.SendDiagnostic(TRACK_CONFIG_TEAM, map[string]interface{}{
 		"enable_user_creation":                    cfg.TeamSettings.EnableUserCreation,
-		"enable_team_creation":                    cfg.TeamSettings.EnableTeamCreation,
+		"enable_team_creation":                    *cfg.TeamSettings.EnableTeamCreation,
 		"restrict_team_invite":                    *cfg.TeamSettings.RestrictTeamInvite,
 		"restrict_public_channel_creation":        *cfg.TeamSettings.RestrictPublicChannelCreation,
 		"restrict_private_channel_creation":       *cfg.TeamSettings.RestrictPrivateChannelCreation,
@@ -423,6 +425,8 @@ func (a *App) trackConfig() {
 		"enable_sync_with_ldap":               *cfg.SamlSettings.EnableSyncWithLdap,
 		"verify":                              *cfg.SamlSettings.Verify,
 		"encrypt":                             *cfg.SamlSettings.Encrypt,
+		"isdefault_scoping_idp_provider_id":   isDefault(*cfg.SamlSettings.ScopingIDPProviderId, ""),
+		"isdefault_scoping_idp_name":          isDefault(*cfg.SamlSettings.ScopingIDPName, ""),
 		"isdefault_first_name_attribute":      isDefault(*cfg.SamlSettings.FirstNameAttribute, model.SAML_SETTINGS_DEFAULT_FIRST_NAME_ATTRIBUTE),
 		"isdefault_last_name_attribute":       isDefault(*cfg.SamlSettings.LastNameAttribute, model.SAML_SETTINGS_DEFAULT_LAST_NAME_ATTRIBUTE),
 		"isdefault_email_attribute":           isDefault(*cfg.SamlSettings.EmailAttribute, model.SAML_SETTINGS_DEFAULT_EMAIL_ATTRIBUTE),
@@ -502,11 +506,23 @@ func (a *App) trackConfig() {
 	})
 
 	a.SendDiagnostic(TRACK_CONFIG_MESSAGE_EXPORT, map[string]interface{}{
-		"enable_message_export":         *cfg.MessageExportSettings.EnableExport,
-		"export_format":                 *cfg.MessageExportSettings.ExportFormat,
-		"daily_run_time":                *cfg.MessageExportSettings.DailyRunTime,
-		"default_export_from_timestamp": *cfg.MessageExportSettings.ExportFromTimestamp,
-		"batch_size":                    *cfg.MessageExportSettings.BatchSize,
+		"enable_message_export":                 *cfg.MessageExportSettings.EnableExport,
+		"export_format":                         *cfg.MessageExportSettings.ExportFormat,
+		"daily_run_time":                        *cfg.MessageExportSettings.DailyRunTime,
+		"default_export_from_timestamp":         *cfg.MessageExportSettings.ExportFromTimestamp,
+		"batch_size":                            *cfg.MessageExportSettings.BatchSize,
+		"global_relay_customer_type":            *cfg.MessageExportSettings.GlobalRelaySettings.CustomerType,
+		"is_default_global_relay_smtp_username": isDefault(*cfg.MessageExportSettings.GlobalRelaySettings.SmtpUsername, ""),
+		"is_default_global_relay_smtp_password": isDefault(*cfg.MessageExportSettings.GlobalRelaySettings.SmtpPassword, ""),
+		"is_default_global_relay_email_address": isDefault(*cfg.MessageExportSettings.GlobalRelaySettings.EmailAddress, ""),
+	})
+
+	a.SendDiagnostic(TRACK_CONFIG_DISPLAY, map[string]interface{}{
+		"experimental_timezone": *cfg.DisplaySettings.ExperimentalTimezone,
+	})
+
+	a.SendDiagnostic(TRACK_CONFIG_TIMEZONE, map[string]interface{}{
+		"isdefault_supported_timezones_path": isDefault(*cfg.TimezoneSettings.SupportedTimezonesPath, model.TIMEZONE_SETTINGS_DEFAULT_SUPPORTED_TIMEZONES_PATH),
 	})
 }
 
