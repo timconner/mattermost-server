@@ -9,6 +9,7 @@ import (
 	"github.com/mattermost/mattermost-server/api"
 	"github.com/mattermost/mattermost-server/cmd"
 	"github.com/mattermost/mattermost-server/model"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateUserWithTeam(t *testing.T) {
@@ -79,4 +80,43 @@ func TestMakeUserActiveAndInactive(t *testing.T) {
 
 	// activate the inactive user
 	cmd.CheckCommand(t, "user", "activate", th.BasicUser.Email)
+}
+
+func TestChangeUserEmail(t *testing.T) {
+	th := api.Setup().InitBasic()
+	defer th.TearDown()
+
+	newEmail := model.NewId() + "@mattermost-test.com"
+
+	cmd.CheckCommand(t, "user", "email", th.BasicUser.Username, newEmail)
+	if result := <-th.App.Srv.Store.User().GetByEmail(th.BasicUser.Email); result.Err == nil {
+		t.Fatal("should've updated to the new email")
+	}
+	if result := <-th.App.Srv.Store.User().GetByEmail(newEmail); result.Err != nil {
+		t.Fatal()
+	} else {
+		user := result.Data.(*model.User)
+		if user.Email != newEmail {
+			t.Fatal("should've updated to the new email")
+		}
+	}
+
+	// should fail because using an invalid email
+	require.Error(t, cmd.RunCommand(t, "user", "email", th.BasicUser.Username, "wrong$email.com"))
+
+	// should fail because missing one parameter
+	require.Error(t, cmd.RunCommand(t, "user", "email", th.BasicUser.Username))
+
+	// should fail because missing both parameters
+	require.Error(t, cmd.RunCommand(t, "user", "email"))
+
+	// should fail because have more than 2  parameters
+	require.Error(t, cmd.RunCommand(t, "user", "email", th.BasicUser.Username, "new@email.com", "extra!"))
+
+	// should fail because user not found
+	require.Error(t, cmd.RunCommand(t, "user", "email", "invalidUser", newEmail))
+
+	// should fail because email already in use
+	require.Error(t, cmd.RunCommand(t, "user", "email", th.BasicUser.Username, th.BasicUser2.Email))
+
 }

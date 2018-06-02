@@ -6,8 +6,6 @@ package store
 import (
 	"time"
 
-	l4g "github.com/alecthomas/log4go"
-
 	"github.com/mattermost/mattermost-server/model"
 )
 
@@ -32,7 +30,7 @@ func Do(f func(result *StoreResult)) StoreChannel {
 func Must(sc StoreChannel) interface{} {
 	r := <-sc
 	if r.Err != nil {
-		l4g.Close()
+
 		time.Sleep(time.Second)
 		panic(r.Err)
 	}
@@ -322,6 +320,7 @@ type SystemStore interface {
 	Update(system *model.System) StoreChannel
 	Get() StoreChannel
 	GetByName(name string) StoreChannel
+	PermanentDeleteByName(name string) StoreChannel
 }
 
 type WebhookStore interface {
@@ -476,4 +475,5 @@ type RoleStore interface {
 	Get(roleId string) StoreChannel
 	GetByName(name string) StoreChannel
 	GetByNames(names []string) StoreChannel
+	PermanentDeleteAll() StoreChannel
 }

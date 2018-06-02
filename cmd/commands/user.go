@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	l4g "github.com/alecthomas/log4go"
 	"github.com/mattermost/mattermost-server/app"
 	"github.com/mattermost/mattermost-server/cmd"
 	"github.com/mattermost/mattermost-server/model"
@@ -64,6 +63,15 @@ var ResetUserPasswordCmd = &cobra.Command{
 	Long:    "Set a user's password",
 	Example: "  user password user@example.com Password1",
 	RunE:    resetUserPasswordCmdF,
+}
+
+var updateUserEmailCmd = &cobra.Command{
+	Use:   "email [user] [new email]",
+	Short: "Change email of the user",
+	Long:  "Change email of the user.",
+	Example: `  user email test user@example.com
+  user activate username`,
+	RunE: updateUserEmailCmdF,
 }
 
 var ResetUserMfaCmd = &cobra.Command{
@@ -229,6 +237,7 @@ Global Flags:
 		UserCreateCmd,
 		UserInviteCmd,
 		ResetUserPasswordCmd,
+		updateUserEmailCmd,
 		ResetUserMfaCmd,
 		DeleteUserCmd,
 		DeleteAllUsersCmd,
@@ -244,12 +253,14 @@ func userActivateCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 1 {
 		return errors.New("Expected at least one argument. See help text for details.")
 	}
 
 	changeUsersActiveStatus(a, args, true)
+
 	return nil
 }
 
@@ -283,12 +294,14 @@ func userDeactivateCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 1 {
 		return errors.New("Expected at least one argument. See help text for details.")
 	}
 
 	changeUsersActiveStatus(a, args, false)
+
 	return nil
 }
 
@@ -297,6 +310,7 @@ func userCreateCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	username, erru := command.Flags().GetString("username")
 	if erru != nil || username == "" {
@@ -342,6 +356,7 @@ func userInviteCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 2 {
 		return errors.New("Expected at least two arguments. See help text for details.")
@@ -381,6 +396,7 @@ func resetUserPasswordCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) != 2 {
 		return errors.New("Expected two arguments. See help text for details.")
@@ -399,11 +415,47 @@ func resetUserPasswordCmdF(command *cobra.Command, args []string) error {
 	return nil
 }
 
+func updateUserEmailCmdF(command *cobra.Command, args []string) error {
+	a, err := cmd.InitDBCommandContextCobra(command)
+	if err != nil {
+		return err
+	}
+	defer a.Shutdown()
+
+	if len(args) != 2 {
+		return errors.New("Expected two arguments. See help text for details.")
+	}
+
+	newEmail := args[1]
+
+	if !model.IsValidEmail(newEmail) {
+		return errors.New("Invalid email: '" + newEmail + "'")
+	}
+
+	if len(args) != 2 {
+		return errors.New("Expected two arguments. See help text for details.")
+	}
+
+	user := getUserFromUserArg(a, args[0])
+	if user == nil {
+		return errors.New("Unable to find user '" + args[0] + "'")
+	}
+
+	user.Email = newEmail
+	_, errUpdate := a.UpdateUser(user, true)
+	if errUpdate != nil {
+		return errors.New(errUpdate.Message)
+	}
+
+	return nil
+}
+
 func resetUserMfaCmdF(command *cobra.Command, args []string) error {
 	a, err := cmd.InitDBCommandContextCobra(command)
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 1 {
 		return errors.New("Expected at least one argument. See help text for details.")
@@ -429,6 +481,7 @@ func deleteUserCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 1 {
 		return errors.New("Expected at least one argument. See help text for details.")
@@ -470,6 +523,7 @@ func deleteAllUsersCommandF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) > 0 {
 		return errors.New("Expected zero arguments.")
@@ -496,6 +550,7 @@ func deleteAllUsersCommandF(command *cobra.Command, args []string) error {
 	}
 
 	cmd.CommandPrettyPrintln("All user accounts successfully deleted.")
+
 	return nil
 }
 
@@ -511,6 +566,7 @@ func migrateAuthToLdapCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	fromAuth := args[0]
 	matchField := args[2]
@@ -547,6 +603,7 @@ func migrateAuthToSamlCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	dryRunFlag, _ := command.Flags().GetBool("dryRun")
 	autoFlag, _ := command.Flags().GetBool("auto")
@@ -590,7 +647,7 @@ func migrateAuthToSamlCmdF(command *cobra.Command, args []string) error {
 		if err := migrate.MigrateToSaml(fromAuth, matches, autoFlag, dryRunFlag); err != nil {
 			return errors.New("Error while migrating users: " + err.Error())
 		}
-		l4g.Close()
+
 		cmd.CommandPrettyPrintln("Successfully migrated accounts.")
 	}
 
@@ -602,6 +659,7 @@ func verifyUserCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 1 {
 		return errors.New("Expected at least one argument. See help text for details.")
@@ -627,6 +685,7 @@ func searchUserCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 1 {
 		return errors.New("Expected at least one argument. See help text for details.")

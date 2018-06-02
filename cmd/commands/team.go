@@ -52,6 +52,14 @@ Permanently deletes a team along with all related information including posts fr
 	RunE:    deleteTeamsCmdF,
 }
 
+var ListTeamsCmd = &cobra.Command{
+	Use:     "list",
+	Short:   "List all teams.",
+	Long:    `List all teams on the server.`,
+	Example: "  team list",
+	RunE:    listTeamsCmdF,
+}
+
 func init() {
 	TeamCreateCmd.Flags().String("name", "", "Team Name")
 	TeamCreateCmd.Flags().String("display_name", "", "Team Display Name")
@@ -65,6 +73,7 @@ func init() {
 		RemoveUsersCmd,
 		AddUsersCmd,
 		DeleteTeamsCmd,
+		ListTeamsCmd,
 	)
 	cmd.RootCmd.AddCommand(TeamCmd)
 }
@@ -74,6 +83,7 @@ func createTeamCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	name, errn := command.Flags().GetString("name")
 	if errn != nil || name == "" {
@@ -110,6 +120,7 @@ func removeUsersCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 2 {
 		return errors.New("Not enough arguments.")
@@ -143,6 +154,7 @@ func addUsersCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 2 {
 		return errors.New("Not enough arguments.")
@@ -176,6 +188,7 @@ func deleteTeamsCmdF(command *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer a.Shutdown()
 
 	if len(args) < 1 {
 		return errors.New("Not enough arguments.")
@@ -215,4 +228,23 @@ func deleteTeamsCmdF(command *cobra.Command, args []string) error {
 
 func deleteTeam(a *app.App, team *model.Team) *model.AppError {
 	return a.PermanentDeleteTeam(team)
+}
+
+func listTeamsCmdF(command *cobra.Command, args []string) error {
+	a, err := cmd.InitDBCommandContextCobra(command)
+	if err != nil {
+		return err
+	}
+	defer a.Shutdown()
+
+	teams, err2 := a.GetAllTeams()
+	if err2 != nil {
+		return err2
+	}
+
+	for _, team := range teams {
+		cmd.CommandPrettyPrintln(team.Name)
+	}
+
+	return nil
 }

@@ -21,6 +21,7 @@ const (
 	IMAGE_DRIVER_LOCAL = "local"
 	IMAGE_DRIVER_S3    = "amazons3"
 
+	DATABASE_DRIVER_SQLITE   = "sqlite3"
 	DATABASE_DRIVER_MYSQL    = "mysql"
 	DATABASE_DRIVER_POSTGRES = "postgres"
 
@@ -584,9 +585,10 @@ func (s *SqlSettings) SetDefaults() {
 type LogSettings struct {
 	EnableConsole          bool
 	ConsoleLevel           string
+	ConsoleJson            *bool
 	EnableFile             bool
 	FileLevel              string
-	FileFormat             string
+	FileJson               *bool
 	FileLocation           string
 	EnableWebhookDebugging bool
 	EnableDiagnostics      *bool
@@ -595,6 +597,14 @@ type LogSettings struct {
 func (s *LogSettings) SetDefaults() {
 	if s.EnableDiagnostics == nil {
 		s.EnableDiagnostics = NewBool(true)
+	}
+
+	if s.ConsoleJson == nil {
+		s.ConsoleJson = NewBool(true)
+	}
+
+	if s.FileJson == nil {
+		s.FileJson = NewBool(true)
 	}
 }
 
@@ -991,6 +1001,7 @@ type TeamSettings struct {
 	MaxNotificationsPerChannel          *int64
 	EnableConfirmNotificationsToChannel *bool
 	TeammateNameDisplay                 *string
+	ExperimentalEnableAutomaticReplies  *bool
 	ExperimentalTownSquareIsReadOnly    *bool
 	ExperimentalPrimaryTeam             *string
 }
@@ -1083,6 +1094,10 @@ func (s *TeamSettings) SetDefaults() {
 
 	if s.EnableConfirmNotificationsToChannel == nil {
 		s.EnableConfirmNotificationsToChannel = NewBool(true)
+	}
+
+	if s.ExperimentalEnableAutomaticReplies == nil {
+		s.ExperimentalEnableAutomaticReplies = NewBool(false)
 	}
 
 	if s.ExperimentalTownSquareIsReadOnly == nil {
@@ -1710,8 +1725,8 @@ func (s *MessageExportSettings) SetDefaults() {
 
 	if s.GlobalRelaySettings == nil {
 		s.GlobalRelaySettings = &GlobalRelayMessageExportSettings{}
-		s.GlobalRelaySettings.SetDefaults()
 	}
+	s.GlobalRelaySettings.SetDefaults()
 }
 
 type DisplaySettings struct {

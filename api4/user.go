@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	l4g "github.com/alecthomas/log4go"
 	"github.com/mattermost/mattermost-server/app"
+	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/store"
 )
@@ -73,15 +73,15 @@ func createUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash := r.URL.Query().Get("h")
+	tokenId := r.URL.Query().Get("t")
 	inviteId := r.URL.Query().Get("iid")
 
 	// No permission check required
 
 	var ruser *model.User
 	var err *model.AppError
-	if len(hash) > 0 {
-		ruser, err = c.App.CreateUserWithHash(user, hash, r.URL.Query().Get("d"))
+	if len(tokenId) > 0 {
+		ruser, err = c.App.CreateUserWithToken(user, tokenId)
 	} else if len(inviteId) > 0 {
 		ruser, err = c.App.CreateUserWithInviteId(user, inviteId)
 	} else if c.IsSystemAdmin() {
@@ -199,7 +199,8 @@ func getProfileImage(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		if len(users) == 0 {
-			c.Err = err
+			c.Err = model.NewAppError("getProfileImage", "api.user.get_profile_image.not_found.app_error", nil, "", http.StatusNotFound)
+			return
 		}
 
 		user := users[0]
@@ -507,7 +508,12 @@ func autocompleteUsers(c *Context, w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		result, _ := c.App.AutocompleteUsersInChannel(teamId, channelId, name, searchOptions, c.IsSystemAdmin())
+		result, err := c.App.AutocompleteUsersInChannel(teamId, channelId, name, searchOptions, c.IsSystemAdmin())
+		if err != nil {
+			c.Err = err
+			return
+		}
+
 		autocomplete.Users = result.InChannel
 		autocomplete.OutOfChannel = result.OutOfChannel
 	} else if len(teamId) > 0 {
@@ -516,11 +522,20 @@ func autocompleteUsers(c *Context, w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		result, _ := c.App.AutocompleteUsersInTeam(teamId, name, searchOptions, c.IsSystemAdmin())
+		result, err := c.App.AutocompleteUsersInTeam(teamId, name, searchOptions, c.IsSystemAdmin())
+		if err != nil {
+			c.Err = err
+			return
+		}
+
 		autocomplete.Users = result.InTeam
 	} else {
 		// No permission check required
-		result, _ := c.App.SearchUsersInTeam("", name, searchOptions, c.IsSystemAdmin())
+		result, err := c.App.SearchUsersInTeam("", name, searchOptions, c.IsSystemAdmin())
+		if err != nil {
+			c.Err = err
+			return
+		}
 		autocomplete.Users = result
 	}
 
@@ -589,8 +604,13 @@ func patchUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ouser, err := c.App.GetUser(c.Params.UserId)
+	if err != nil {
+		c.SetInvalidParam("user_id")
+		return
+	}
+
 	if c.Session.IsOAuth && patch.Email != nil {
-		ouser, err := c.App.GetUser(c.Params.UserId)
 		if err != nil {
 			c.Err = err
 			return
@@ -607,6 +627,7 @@ func patchUser(c *Context, w http.ResponseWriter, r *http.Request) {
 		c.Err = err
 		return
 	} else {
+		c.App.SetAutoResponderStatus(ruser, ouser.NotifyProps)
 		c.LogAudit("")
 		w.Write([]byte(ruser.ToJson()))
 	}
@@ -1156,7 +1177,7 @@ func sendVerificationEmail(c *Context, w http.ResponseWriter, r *http.Request) {
 	err = c.App.SendEmailVerification(user)
 	if err != nil {
 		// Don't want to leak whether the email is valid or not
-		l4g.Error(err.Error())
+		mlog.Error(err.Error())
 		ReturnStatusOK(w)
 		return
 	}

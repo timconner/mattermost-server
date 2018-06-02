@@ -14,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	l4g "github.com/alecthomas/log4go"
 )
 
 var UsedApiV3 *int32 = new(int32)
@@ -210,7 +208,7 @@ func getCookie(name string, resp *http.Response) *http.Cookie {
 // Must is a convenience function used for testing.
 func (c *Client) Must(result *Result, err *AppError) *Result {
 	if err != nil {
-		l4g.Close()
+
 		time.Sleep(time.Second)
 		panic(err)
 	}
@@ -221,7 +219,7 @@ func (c *Client) Must(result *Result, err *AppError) *Result {
 // MustGeneric is a convenience function used for testing.
 func (c *Client) MustGeneric(result interface{}, err *AppError) interface{} {
 	if err != nil {
-		l4g.Close()
+
 		time.Sleep(time.Second)
 		panic(err)
 	}
@@ -377,11 +375,11 @@ func (c *Client) AddUserToTeam(teamId string, userId string) (*Result, *AppError
 }
 
 // AddUserToTeamFromInvite adds a user to a team based off data provided in an invite link.
-// Either hash and dataToHash are required or inviteId is required.
-func (c *Client) AddUserToTeamFromInvite(hash, dataToHash, inviteId string) (*Result, *AppError) {
+// Either token and data are required or inviteId is required.
+func (c *Client) AddUserToTeamFromInvite(token, inviteData, inviteId string) (*Result, *AppError) {
 	data := make(map[string]string)
-	data["hash"] = hash
-	data["data"] = dataToHash
+	data["token"] = token
+	data["data"] = inviteData
 	data["invite_id"] = inviteId
 	if r, err := c.DoApiPost("/teams/add_user_to_team_from_invite", MapToJson(data)); err != nil {
 		return nil, err
@@ -438,7 +436,7 @@ func (c *Client) UpdateTeam(team *Team) (*Result, *AppError) {
 // User Routes Section
 
 // CreateUser creates a user in the system based on the provided user struct.
-func (c *Client) CreateUser(user *User, hash string) (*Result, *AppError) {
+func (c *Client) CreateUser(user *User, token string) (*Result, *AppError) {
 	if r, err := c.DoApiPost("/users/create", user.ToJson()); err != nil {
 		return nil, err
 	} else {
@@ -448,11 +446,11 @@ func (c *Client) CreateUser(user *User, hash string) (*Result, *AppError) {
 	}
 }
 
-// CreateUserWithInvite creates a user based on the provided user struct. Either the hash and
+// CreateUserWithInvite creates a user based on the provided user struct. Either the token and
 // data strings or the inviteId is required from the invite.
-func (c *Client) CreateUserWithInvite(user *User, hash string, data string, inviteId string) (*Result, *AppError) {
+func (c *Client) CreateUserWithInvite(user *User, token string, data string, inviteId string) (*Result, *AppError) {
 
-	url := "/users/create?d=" + url.QueryEscape(data) + "&h=" + url.QueryEscape(hash) + "&iid=" + url.QueryEscape(inviteId)
+	url := "/users/create?d=" + url.QueryEscape(data) + "&t=" + url.QueryEscape(token) + "&iid=" + url.QueryEscape(inviteId)
 
 	if r, err := c.DoApiPost(url, user.ToJson()); err != nil {
 		return nil, err
@@ -463,8 +461,8 @@ func (c *Client) CreateUserWithInvite(user *User, hash string, data string, invi
 	}
 }
 
-func (c *Client) CreateUserFromSignup(user *User, data string, hash string) (*Result, *AppError) {
-	if r, err := c.DoApiPost("/users/create?d="+url.QueryEscape(data)+"&h="+hash, user.ToJson()); err != nil {
+func (c *Client) CreateUserFromSignup(user *User, data string, token string) (*Result, *AppError) {
+	if r, err := c.DoApiPost("/users/create?d="+url.QueryEscape(data)+"&t="+token, user.ToJson()); err != nil {
 		return nil, err
 	} else {
 		defer closeBody(r)
@@ -831,8 +829,10 @@ func (c *Client) Command(channelId string, command string) (*Result, *AppError) 
 		return nil, err
 	} else {
 		defer closeBody(r)
+
+		response, _ := CommandResponseFromJson(r.Body)
 		return &Result{r.Header.Get(HEADER_REQUEST_ID),
-			r.Header.Get(HEADER_ETAG_SERVER), CommandResponseFromJson(r.Body)}, nil
+			r.Header.Get(HEADER_ETAG_SERVER), response}, nil
 	}
 }
 

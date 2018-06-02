@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	l4g "github.com/alecthomas/log4go"
+	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/store"
 	"github.com/mattermost/mattermost-server/utils"
@@ -57,7 +57,19 @@ func (a *App) JoinDefaultChannels(teamId string, user *model.User, channelRole s
 			err = cmResult.Err
 		}
 		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(user.Id, townSquare.Id, model.GetMillis()); result.Err != nil {
-			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+			mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
+		}
+
+		if *a.Config().ServiceSettings.ExperimentalEnableDefaultChannelLeaveJoinMessages {
+			if requestor == nil {
+				if err := a.postJoinTeamMessage(user, townSquare); err != nil {
+					mlog.Error(fmt.Sprint("Failed to post join/leave message", err))
+				}
+			} else {
+				if err := a.postAddToTeamMessage(requestor, user, townSquare, ""); err != nil {
+					mlog.Error(fmt.Sprint("Failed to post join/leave message", err))
+				}
+			}
 		}
 
 		a.InvalidateCacheForChannelMembers(result.Data.(*model.Channel).Id)
@@ -78,7 +90,19 @@ func (a *App) JoinDefaultChannels(teamId string, user *model.User, channelRole s
 			err = cmResult.Err
 		}
 		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(user.Id, general.Id, model.GetMillis()); result.Err != nil {
-			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+			mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
+		}
+		
+		if *a.Config().ServiceSettings.ExperimentalEnableDefaultChannelLeaveJoinMessages {
+			if requestor == nil {
+				if err := a.postJoinChannelMessage(user, general); err != nil {
+					mlog.Error(fmt.Sprint("Failed to post join/leave message", err))
+				}
+			} else {
+				if err := a.PostAddToChannelMessage(requestor, user, general, ""); err != nil {
+					mlog.Error(fmt.Sprint("Failed to post join/leave message", err))
+				}
+			}
 		}
 
 		a.InvalidateCacheForChannelMembers(result.Data.(*model.Channel).Id)
@@ -149,7 +173,7 @@ func (a *App) CreateChannel(channel *model.Channel, addMember bool) (*model.Chan
 				return nil, cmresult.Err
 			}
 			if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(channel.CreatorId, sc.Id, model.GetMillis()); result.Err != nil {
-				l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+				mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
 			}
 
 			a.InvalidateCacheForUser(channel.CreatorId)
@@ -202,10 +226,10 @@ func (a *App) createDirectChannel(userId string, otherUserId string) (*model.Cha
 		channel := result.Data.(*model.Channel)
 
 		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(userId, channel.Id, model.GetMillis()); result.Err != nil {
-			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+			mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
 		}
 		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(otherUserId, channel.Id, model.GetMillis()); result.Err != nil {
-			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+			mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
 		}
 
 		return channel, nil
@@ -233,7 +257,7 @@ func (a *App) WaitForChannelMembership(channelId string, userId string) {
 			}
 		}
 
-		l4g.Error("WaitForChannelMembership giving up channelId=%v userId=%v", channelId, userId)
+		mlog.Error(fmt.Sprintf("WaitForChannelMembership giving up channelId=%v userId=%v", channelId, userId), mlog.String("user_id", userId))
 	}
 }
 
@@ -304,7 +328,7 @@ func (a *App) createGroupChannel(userIds []string, creatorId string) (*model.Cha
 				return nil, result.Err
 			}
 			if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(user.Id, channel.Id, model.GetMillis()); result.Err != nil {
-				l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+				mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
 			}
 		}
 
@@ -388,19 +412,19 @@ func (a *App) PatchChannel(channel *model.Channel, patch *model.ChannelPatch, us
 
 	if oldChannelDisplayName != channel.DisplayName {
 		if err := a.PostUpdateChannelDisplayNameMessage(userId, channel, oldChannelDisplayName, channel.DisplayName); err != nil {
-			l4g.Error(err.Error())
+			mlog.Error(err.Error())
 		}
 	}
 
 	if channel.Header != oldChannelHeader {
 		if err := a.PostUpdateChannelHeaderMessage(userId, channel, oldChannelHeader, channel.Header); err != nil {
-			l4g.Error(err.Error())
+			mlog.Error(err.Error())
 		}
 	}
 
 	if channel.Purpose != oldChannelPurpose {
 		if err := a.PostUpdateChannelPurposeMessage(userId, channel, oldChannelPurpose, channel.Purpose); err != nil {
-			l4g.Error(err.Error())
+			mlog.Error(err.Error())
 		}
 	}
 
@@ -511,21 +535,21 @@ func (a *App) DeleteChannel(channel *model.Channel, userId string) *model.AppErr
 			}
 
 			if _, err := a.CreatePost(post, channel, false); err != nil {
-				l4g.Error(utils.T("api.channel.delete_channel.failed_post.error"), err)
+				mlog.Error(fmt.Sprintf("Failed to post archive message %v", err))
 			}
 		}
 
 		now := model.GetMillis()
 		for _, hook := range incomingHooks {
 			if result := <-a.Srv.Store.Webhook().DeleteIncoming(hook.Id, now); result.Err != nil {
-				l4g.Error(utils.T("api.channel.delete_channel.incoming_webhook.error"), hook.Id)
+				mlog.Error(fmt.Sprintf("Encountered error deleting incoming webhook, id=%v", hook.Id))
 			}
 			a.InvalidateCacheForWebhook(hook.Id)
 		}
 
 		for _, hook := range outgoingHooks {
 			if result := <-a.Srv.Store.Webhook().DeleteOutgoing(hook.Id, now); result.Err != nil {
-				l4g.Error(utils.T("api.channel.delete_channel.outgoing_webhook.error"), hook.Id)
+				mlog.Error(fmt.Sprintf("Encountered error deleting outgoing webhook, id=%v", hook.Id))
 			}
 		}
 
@@ -569,13 +593,13 @@ func (a *App) addUserToChannel(user *model.User, channel *model.Channel, teamMem
 		Roles:       model.CHANNEL_USER_ROLE_ID,
 	}
 	if result := <-a.Srv.Store.Channel().SaveMember(newMember); result.Err != nil {
-		l4g.Error("Failed to add member user_id=%v channel_id=%v err=%v", user.Id, channel.Id, result.Err)
+		mlog.Error(fmt.Sprintf("Failed to add member user_id=%v channel_id=%v err=%v", user.Id, channel.Id, result.Err), mlog.String("user_id", user.Id))
 		return nil, model.NewAppError("AddUserToChannel", "api.channel.add_user.to.channel.failed.app_error", nil, "", http.StatusInternalServerError)
 	}
 	a.WaitForChannelMembership(channel.Id, user.Id)
 
 	if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(user.Id, channel.Id, model.GetMillis()); result.Err != nil {
-		l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+		mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
 	}
 
 	a.InvalidateCacheForUser(user.Id)
@@ -627,8 +651,10 @@ func (a *App) AddChannelMember(userId string, channel *model.Channel, userReques
 	}
 
 	var userRequestor *model.User
-	if userRequestor, err = a.GetUser(userRequestorId); err != nil {
-		return nil, err
+	if userRequestorId != "" {
+		if userRequestor, err = a.GetUser(userRequestorId); err != nil {
+			return nil, err
+		}
 	}
 
 	cm, err := a.AddUserToChannel(user, channel)
@@ -636,7 +662,7 @@ func (a *App) AddChannelMember(userId string, channel *model.Channel, userReques
 		return nil, err
 	}
 
-	if userId == userRequestorId {
+	if userRequestorId == "" || userId == userRequestorId {
 		a.postJoinChannelMessage(user, channel)
 	} else {
 		a.Go(func() {
@@ -644,7 +670,9 @@ func (a *App) AddChannelMember(userId string, channel *model.Channel, userReques
 		})
 	}
 
-	a.UpdateChannelLastViewedAt([]string{channel.Id}, userRequestor.Id)
+	if userRequestor != nil {
+		a.UpdateChannelLastViewedAt([]string{channel.Id}, userRequestor.Id)
+	}
 
 	return cm, nil
 }
@@ -782,34 +810,6 @@ func (a *App) PostUpdateChannelDisplayNameMessage(userId string, channel *model.
 
 		if _, err := a.CreatePost(post, channel, false); err != nil {
 			return model.NewAppError("PostUpdateChannelDisplayNameMessage", "api.channel.post_update_channel_displayname_message_and_forget.create_post.error", nil, err.Error(), http.StatusInternalServerError)
-		}
-	}
-
-	return nil
-}
-
-func (a *App) PostConvertChannelToPrivate(userId string, channel *model.Channel) *model.AppError {
-	uc := a.Srv.Store.User().Get(userId)
-
-	if uresult := <-uc; uresult.Err != nil {
-		return model.NewAppError("PostConvertChannelToPrivate", "api.channel.post_convert_channel_to_private.retrieve_user.error", nil, uresult.Err.Error(), http.StatusBadRequest)
-	} else {
-		user := uresult.Data.(*model.User)
-
-		message := fmt.Sprintf(utils.T("api.channel.post_convert_channel_to_private.updated_from"), user.Username)
-
-		post := &model.Post{
-			ChannelId: channel.Id,
-			Message:   message,
-			Type:      model.POST_CONVERT_CHANNEL,
-			UserId:    userId,
-			Props: model.StringInterface{
-				"username": user.Username,
-			},
-		}
-
-		if _, err := a.CreatePost(post, channel, false); err != nil {
-			return model.NewAppError("PostConvertChannelToPrivate", "api.channel.post_convert_channel_to_private.create_post.error", nil, err.Error(), http.StatusInternalServerError)
 		}
 	}
 
@@ -1111,10 +1111,10 @@ func (a *App) PostAddToChannelMessage(user *model.User, addedUser *model.User, c
 		UserId:    user.Id,
 		RootId:    postRootId,
 		Props: model.StringInterface{
-			"userId":        user.Id,
-			"username":      user.Username,
-			"addedUserId":   addedUser.Id,
-			"addedUsername": addedUser.Username,
+			"userId":                       user.Id,
+			"username":                     user.Username,
+			model.POST_PROPS_ADDED_USER_ID: addedUser.Id,
+			"addedUsername":                addedUser.Username,
 		},
 	}
 
@@ -1133,10 +1133,10 @@ func (a *App) postAddToTeamMessage(user *model.User, addedUser *model.User, chan
 		UserId:    user.Id,
 		RootId:    postRootId,
 		Props: model.StringInterface{
-			"userId":        user.Id,
-			"username":      user.Username,
-			"addedUserId":   addedUser.Id,
-			"addedUsername": addedUser.Username,
+			"userId":                       user.Id,
+			"username":                     user.Username,
+			model.POST_PROPS_ADDED_USER_ID: addedUser.Id,
+			"addedUsername":                addedUser.Username,
 		},
 	}
 
@@ -1448,10 +1448,10 @@ func (a *App) GetDirectChannel(userId1, userId2 string) (*model.Channel, *model.
 
 		channel := result.Data.(*model.Channel)
 		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(userId1, channel.Id, model.GetMillis()); result.Err != nil {
-			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+			mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
 		}
 		if result := <-a.Srv.Store.ChannelMemberHistory().LogJoinEvent(userId2, channel.Id, model.GetMillis()); result.Err != nil {
-			l4g.Warn("Failed to update ChannelMemberHistory table %v", result.Err)
+			mlog.Warn(fmt.Sprintf("Failed to update ChannelMemberHistory table %v", result.Err))
 		}
 
 		return channel, nil
@@ -1462,7 +1462,13 @@ func (a *App) GetDirectChannel(userId1, userId2 string) (*model.Channel, *model.
 }
 
 func (a *App) ToggleMuteChannel(channelId string, userId string) *model.ChannelMember {
-	member := (<-a.Srv.Store.Channel().GetMember(channelId, userId)).Data.(*model.ChannelMember)
+	result := <-a.Srv.Store.Channel().GetMember(channelId, userId)
+
+	if result.Err != nil {
+		return nil
+	}
+
+	member := result.Data.(*model.ChannelMember)
 
 	if member.NotifyProps[model.MARK_UNREAD_NOTIFY_PROP] == model.CHANNEL_NOTIFY_MENTION {
 		member.NotifyProps[model.MARK_UNREAD_NOTIFY_PROP] = model.CHANNEL_MARK_UNREAD_ALL

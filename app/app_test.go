@@ -9,10 +9,10 @@ import (
 	"os"
 	"testing"
 
-	l4g "github.com/alecthomas/log4go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/store/storetest"
 	"github.com/mattermost/mattermost-server/utils"
@@ -20,12 +20,22 @@ import (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
+
+	// Setup a global logger to catch tests logging outside of app context
+	// The global logger will be stomped by apps initalizing but that's fine for testing. Ideally this won't happen.
+	mlog.InitGlobalLogger(mlog.NewLogger(&mlog.LoggerConfiguration{
+		EnableConsole: true,
+		ConsoleJson:   true,
+		ConsoleLevel:  "error",
+		EnableFile:    false,
+	}))
+
 	utils.TranslationsPreInit()
 
 	// In the case where a dev just wants to run a single test, it's faster to just use the default
 	// store.
 	if filter := flag.Lookup("test.run").Value.String(); filter != "" && filter != "." {
-		l4g.Info("-test.run used, not creating temporary containers")
+		mlog.Info("-test.run used, not creating temporary containers")
 		os.Exit(m.Run())
 	}
 
@@ -195,6 +205,7 @@ func TestDoAdvancedPermissionsMigration(t *testing.T) {
 			model.PERMISSION_LIST_USERS_WITHOUT_TEAM.Id,
 			model.PERMISSION_MANAGE_JOBS.Id,
 			model.PERMISSION_CREATE_POST_PUBLIC.Id,
+			model.PERMISSION_CREATE_POST_EPHEMERAL.Id,
 			model.PERMISSION_CREATE_USER_ACCESS_TOKEN.Id,
 			model.PERMISSION_READ_USER_ACCESS_TOKEN.Id,
 			model.PERMISSION_REVOKE_USER_ACCESS_TOKEN.Id,
@@ -359,6 +370,7 @@ func TestDoAdvancedPermissionsMigration(t *testing.T) {
 			model.PERMISSION_LIST_USERS_WITHOUT_TEAM.Id,
 			model.PERMISSION_MANAGE_JOBS.Id,
 			model.PERMISSION_CREATE_POST_PUBLIC.Id,
+			model.PERMISSION_CREATE_POST_EPHEMERAL.Id,
 			model.PERMISSION_CREATE_USER_ACCESS_TOKEN.Id,
 			model.PERMISSION_READ_USER_ACCESS_TOKEN.Id,
 			model.PERMISSION_REVOKE_USER_ACCESS_TOKEN.Id,
@@ -414,4 +426,32 @@ func TestDoAdvancedPermissionsMigration(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, permissions, role.Permissions)
 	}
+
+	// Check that the config setting for "always" and "time_limit" edit posts is updated correctly.
+	th.ResetRoleMigration()
+
+	config := th.App.GetConfig()
+	*config.ServiceSettings.AllowEditPost = "always"
+	*config.ServiceSettings.PostEditTimeLimit = 300
+	th.App.SaveConfig(config, false)
+
+	th.App.DoAdvancedPermissionsMigration()
+	config = th.App.GetConfig()
+	assert.Equal(t, -1, *config.ServiceSettings.PostEditTimeLimit)
+
+	th.ResetRoleMigration()
+
+	config = th.App.GetConfig()
+	*config.ServiceSettings.AllowEditPost = "time_limit"
+	*config.ServiceSettings.PostEditTimeLimit = 300
+	th.App.SaveConfig(config, false)
+
+	th.App.DoAdvancedPermissionsMigration()
+	config = th.App.GetConfig()
+	assert.Equal(t, 300, *config.ServiceSettings.PostEditTimeLimit)
+
+	config = th.App.GetConfig()
+	*config.ServiceSettings.AllowEditPost = "always"
+	*config.ServiceSettings.PostEditTimeLimit = 300
+	th.App.SaveConfig(config, false)
 }

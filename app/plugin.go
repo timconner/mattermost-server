@@ -15,11 +15,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode/utf8"
-
-	l4g "github.com/alecthomas/log4go"
 
 	"github.com/gorilla/mux"
+	"github.com/mattermost/mattermost-server/mlog"
 	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/utils"
 
@@ -34,10 +32,6 @@ import (
 	"github.com/mattermost/mattermost-server/plugin/rpcplugin/sandbox"
 )
 
-const (
-	PLUGIN_MAX_ID_LENGTH = 190
-)
-
 var prepackagedPlugins map[string]func(string) ([]byte, error) = map[string]func(string) ([]byte, error){
 	"jira": jira.Asset,
 	"zoom": zoom.Asset,
@@ -48,7 +42,7 @@ func (a *App) initBuiltInPlugins() {
 		"ldapextras": &ldapextras.Plugin{},
 	}
 	for id, p := range plugins {
-		l4g.Debug("Initializing built-in plugin: " + id)
+		mlog.Debug("Initializing built-in plugin", mlog.String("plugin_id", id))
 		api := &BuiltInPluginAPI{
 			id:     id,
 			router: a.Srv.Router.PathPrefix("/plugins/" + id).Subrouter(),
@@ -66,21 +60,23 @@ func (a *App) initBuiltInPlugins() {
 	}
 }
 
-// ActivatePlugins will activate any plugins enabled in the config
-// and deactivate all other plugins.
-func (a *App) ActivatePlugins() {
+func (a *App) setPluginsActive(activate bool) {
 	if a.PluginEnv == nil {
-		l4g.Error("plugin env not initialized")
+		mlog.Error(fmt.Sprintf("Cannot setPluginsActive(%t): plugin env not initialized", activate))
 		return
 	}
 
 	plugins, err := a.PluginEnv.Plugins()
 	if err != nil {
-		l4g.Error("failed to activate plugins: " + err.Error())
+		mlog.Error(fmt.Sprintf("Cannot setPluginsActive(%t)", activate), mlog.Err(err))
 		return
 	}
 
 	for _, plugin := range plugins {
+		if plugin.Manifest == nil {
+			continue
+		}
+
 		id := plugin.Manifest.Id
 
 		pluginState := &model.PluginState{Enable: false}
@@ -90,15 +86,14 @@ func (a *App) ActivatePlugins() {
 
 		active := a.PluginEnv.IsPluginActive(id)
 
-		if pluginState.Enable && !active {
+		if activate && pluginState.Enable && !active {
 			if err := a.activatePlugin(plugin.Manifest); err != nil {
-				l4g.Error("%v plugin enabled in config.json but failing to activate err=%v", plugin.Manifest.Id, err.DetailedError)
-				continue
+				mlog.Error("Plugin failed to activate", mlog.String("plugin_id", plugin.Manifest.Id), mlog.String("err", err.DetailedError))
 			}
 
-		} else if !pluginState.Enable && active {
+		} else if (!activate || !pluginState.Enable) && active {
 			if err := a.deactivatePlugin(plugin.Manifest); err != nil {
-				l4g.Error(err.Error())
+				mlog.Error("Plugin failed to deactivate", mlog.String("plugin_id", plugin.Manifest.Id), mlog.String("err", err.DetailedError))
 			}
 		}
 	}
@@ -115,13 +110,13 @@ func (a *App) activatePlugin(manifest *model.Manifest) *model.AppError {
 		a.Publish(message)
 	}
 
-	l4g.Info("Activated %v plugin", manifest.Id)
+	mlog.Info("Activated plugin", mlog.String("plugin_id", manifest.Id))
 	return nil
 }
 
 func (a *App) deactivatePlugin(manifest *model.Manifest) *model.AppError {
 	if err := a.PluginEnv.DeactivatePlugin(manifest.Id); err != nil {
-		return model.NewAppError("removePlugin", "app.plugin.deactivate.app_error", nil, err.Error(), http.StatusBadRequest)
+		return model.NewAppError("deactivatePlugin", "app.plugin.deactivate.app_error", nil, err.Error(), http.StatusBadRequest)
 	}
 
 	a.UnregisterPluginCommands(manifest.Id)
@@ -132,7 +127,7 @@ func (a *App) deactivatePlugin(manifest *model.Manifest) *model.AppError {
 		a.Publish(message)
 	}
 
-	l4g.Info("Deactivated %v plugin", manifest.Id)
+	mlog.Info("Deactivated plugin", mlog.String("plugin_id", manifest.Id))
 	return nil
 }
 
@@ -175,8 +170,8 @@ func (a *App) installPlugin(pluginFile io.Reader, allowPrepackaged bool) (*model
 		return nil, model.NewAppError("installPlugin", "app.plugin.prepackaged.app_error", nil, "", http.StatusBadRequest)
 	}
 
-	if utf8.RuneCountInString(manifest.Id) > PLUGIN_MAX_ID_LENGTH {
-		return nil, model.NewAppError("installPlugin", "app.plugin.id_length.app_error", map[string]interface{}{"Max": PLUGIN_MAX_ID_LENGTH}, err.Error(), http.StatusBadRequest)
+	if !plugin.IsValidId(manifest.Id) {
+		return nil, model.NewAppError("installPlugin", "app.plugin.invalid_id.app_error", map[string]interface{}{"Min": plugin.MinIdLength, "Max": plugin.MaxIdLength, "Regex": plugin.ValidId.String()}, "", http.StatusBadRequest)
 	}
 
 	bundles, err := a.PluginEnv.Plugins()
@@ -185,7 +180,7 @@ func (a *App) installPlugin(pluginFile io.Reader, allowPrepackaged bool) (*model
 	}
 
 	for _, bundle := range bundles {
-		if bundle.Manifest.Id == manifest.Id {
+		if bundle.Manifest != nil && bundle.Manifest.Id == manifest.Id {
 			return nil, model.NewAppError("installPlugin", "app.plugin.install_id.app_error", nil, "", http.StatusBadRequest)
 		}
 	}
@@ -212,6 +207,10 @@ func (a *App) GetPlugins() (*model.PluginsResponse, *model.AppError) {
 
 	resp := &model.PluginsResponse{Active: []*model.PluginInfo{}, Inactive: []*model.PluginInfo{}}
 	for _, plugin := range plugins {
+		if plugin.Manifest == nil {
+			continue
+		}
+
 		info := &model.PluginInfo{
 			Manifest: *plugin.Manifest,
 		}
@@ -260,9 +259,11 @@ func (a *App) removePlugin(id string, allowPrepackaged bool) *model.AppError {
 	}
 
 	var manifest *model.Manifest
+	var pluginPath string
 	for _, p := range plugins {
-		if p.Manifest.Id == id {
+		if p.Manifest != nil && p.Manifest.Id == id {
 			manifest = p.Manifest
+			pluginPath = filepath.Dir(p.ManifestPath)
 			break
 		}
 	}
@@ -278,7 +279,7 @@ func (a *App) removePlugin(id string, allowPrepackaged bool) *model.AppError {
 		}
 	}
 
-	err = os.RemoveAll(filepath.Join(a.PluginEnv.SearchPath(), id))
+	err = os.RemoveAll(pluginPath)
 	if err != nil {
 		return model.NewAppError("removePlugin", "app.plugin.remove.app_error", nil, err.Error(), http.StatusInternalServerError)
 	}
@@ -370,15 +371,15 @@ func (a *App) InitPlugins(pluginPath, webappPath string, supervisorOverride plug
 		return
 	}
 
-	l4g.Info("Starting up plugins")
+	mlog.Info("Starting up plugins")
 
 	if err := os.Mkdir(pluginPath, 0744); err != nil && !os.IsExist(err) {
-		l4g.Error("failed to start up plugins: " + err.Error())
+		mlog.Error("Failed to start up plugins", mlog.Err(err))
 		return
 	}
 
 	if err := os.Mkdir(webappPath, 0744); err != nil && !os.IsExist(err) {
-		l4g.Error("failed to start up plugins: " + err.Error())
+		mlog.Error("Failed to start up plugins", mlog.Err(err))
 		return
 	}
 
@@ -400,15 +401,14 @@ func (a *App) InitPlugins(pluginPath, webappPath string, supervisorOverride plug
 	if supervisorOverride != nil {
 		options = append(options, pluginenv.SupervisorProvider(supervisorOverride))
 	} else if err := sandbox.CheckSupport(); err != nil {
-		l4g.Warn(err.Error())
-		l4g.Warn("plugin sandboxing is not supported. plugins will run with the same access level as the server. See documentation to learn more: https://developers.mattermost.com/extend/plugins/security/")
+		mlog.Warn("plugin sandboxing is not supported. plugins will run with the same access level as the server. See documentation to learn more: https://developers.mattermost.com/extend/plugins/security/", mlog.Err(err))
 		options = append(options, pluginenv.SupervisorProvider(rpcplugin.SupervisorProvider))
 	} else {
 		options = append(options, pluginenv.SupervisorProvider(sandbox.SupervisorProvider))
 	}
 
 	if env, err := pluginenv.New(options...); err != nil {
-		l4g.Error("failed to start up plugins: " + err.Error())
+		mlog.Error("Failed to start up plugins", mlog.Err(err))
 		return
 	} else {
 		a.PluginEnv = env
@@ -416,42 +416,40 @@ func (a *App) InitPlugins(pluginPath, webappPath string, supervisorOverride plug
 
 	for id, asset := range prepackagedPlugins {
 		if tarball, err := asset("plugin.tar.gz"); err != nil {
-			l4g.Error("failed to install prepackaged plugin: " + err.Error())
+			mlog.Error("Failed to install prepackaged plugin", mlog.Err(err))
 		} else if tarball != nil {
 			a.removePlugin(id, true)
 			if _, err := a.installPlugin(bytes.NewReader(tarball), true); err != nil {
-				l4g.Error("failed to install prepackaged plugin: " + err.Error())
+				mlog.Error("Failed to install prepackaged plugin", mlog.Err(err))
 			}
 			if _, ok := a.Config().PluginSettings.PluginStates[id]; !ok && id != "zoom" {
 				if err := a.EnablePlugin(id); err != nil {
-					l4g.Error("failed to enable prepackaged plugin: " + err.Error())
+					mlog.Error("Failed to enable prepackaged plugin", mlog.Err(err))
 				}
 			}
 		}
 	}
 
 	a.RemoveConfigListener(a.PluginConfigListenerId)
-	a.PluginConfigListenerId = a.AddConfigListener(func(prevCfg, cfg *model.Config) {
+	a.PluginConfigListenerId = a.AddConfigListener(func(_, cfg *model.Config) {
 		if a.PluginEnv == nil {
 			return
 		}
 
-		if *prevCfg.PluginSettings.Enable && *cfg.PluginSettings.Enable {
-			a.ActivatePlugins()
-		}
+		a.setPluginsActive(*cfg.PluginSettings.Enable)
 
 		for _, err := range a.PluginEnv.Hooks().OnConfigurationChange() {
-			l4g.Error(err.Error())
+			mlog.Error(err.Error())
 		}
 	})
 
-	a.ActivatePlugins()
+	a.setPluginsActive(true)
 }
 
 func (a *App) ServePluginRequest(w http.ResponseWriter, r *http.Request) {
 	if a.PluginEnv == nil || !*a.Config().PluginSettings.Enable {
 		err := model.NewAppError("ServePluginRequest", "app.plugin.disabled.app_error", nil, "Enable plugins to serve plugin requests", http.StatusNotImplemented)
-		l4g.Error(err.Error())
+		mlog.Error(err.Error())
 		w.WriteHeader(err.StatusCode)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(err.ToJson()))
@@ -507,10 +505,10 @@ func (a *App) ShutDownPlugins() {
 		return
 	}
 
-	l4g.Info("Shutting down plugins")
+	mlog.Info("Shutting down plugins")
 
 	for _, err := range a.PluginEnv.Shutdown() {
-		l4g.Error(err.Error())
+		mlog.Error(err.Error())
 	}
 	a.RemoveConfigListener(a.PluginConfigListenerId)
 	a.PluginConfigListenerId = ""
@@ -533,7 +531,7 @@ func (a *App) SetPluginKey(pluginId string, key string, value []byte) *model.App
 	result := <-a.Srv.Store.Plugin().SaveOrUpdate(kv)
 
 	if result.Err != nil {
-		l4g.Error(result.Err.Error())
+		mlog.Error(result.Err.Error())
 	}
 
 	return result.Err
@@ -546,7 +544,7 @@ func (a *App) GetPluginKey(pluginId string, key string) ([]byte, *model.AppError
 		if result.Err.StatusCode == http.StatusNotFound {
 			return nil, nil
 		}
-		l4g.Error(result.Err.Error())
+		mlog.Error(result.Err.Error())
 		return nil, result.Err
 	}
 
@@ -559,7 +557,7 @@ func (a *App) DeletePluginKey(pluginId string, key string) *model.AppError {
 	result := <-a.Srv.Store.Plugin().Delete(pluginId, getKeyHash(key))
 
 	if result.Err != nil {
-		l4g.Error(result.Err.Error())
+		mlog.Error(result.Err.Error())
 	}
 
 	return result.Err

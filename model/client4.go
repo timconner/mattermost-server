@@ -162,6 +162,10 @@ func (c *Client4) GetPostsRoute() string {
 	return fmt.Sprintf("/posts")
 }
 
+func (c *Client4) GetPostsEphemeralRoute() string {
+	return fmt.Sprintf("/posts/ephemeral")
+}
+
 func (c *Client4) GetConfigRoute() string {
 	return fmt.Sprintf("/config")
 }
@@ -526,13 +530,13 @@ func (c *Client4) CreateUser(user *User) (*User, *Response) {
 	}
 }
 
-// CreateUserWithHash creates a user in the system based on the provided user struct and hash created.
-func (c *Client4) CreateUserWithHash(user *User, hash, data string) (*User, *Response) {
+// CreateUserWithToken creates a user in the system based on the provided tokenId.
+func (c *Client4) CreateUserWithToken(user *User, tokenId string) (*User, *Response) {
 	var query string
-	if hash != "" && data != "" {
-		query = fmt.Sprintf("?d=%v&h=%v", url.QueryEscape(data), hash)
+	if tokenId != "" {
+		query = fmt.Sprintf("?t=%v", tokenId)
 	} else {
-		err := NewAppError("MissingHashOrData", "api.user.create_user.missing_hash_or_data.app_error", nil, "", http.StatusBadRequest)
+		err := NewAppError("MissingHashOrData", "api.user.create_user.missing_token.app_error", nil, "", http.StatusBadRequest)
 		return nil, &Response{StatusCode: err.StatusCode, Error: err}
 	}
 	if r, err := c.DoApiPost(c.GetUsersRoute()+query, user.ToJson()); err != nil {
@@ -1336,16 +1340,16 @@ func (c *Client4) AddTeamMember(teamId, userId string) (*TeamMember, *Response) 
 }
 
 // AddTeamMemberFromInvite adds a user to a team and return a team member using an invite id
-// or an invite hash/data pair.
-func (c *Client4) AddTeamMemberFromInvite(hash, dataToHash, inviteId string) (*TeamMember, *Response) {
+// or an invite token/data pair.
+func (c *Client4) AddTeamMemberFromInvite(token, inviteId string) (*TeamMember, *Response) {
 	var query string
 
 	if inviteId != "" {
 		query += fmt.Sprintf("?invite_id=%v", inviteId)
 	}
 
-	if hash != "" && dataToHash != "" {
-		query += fmt.Sprintf("?hash=%v&data=%v", hash, dataToHash)
+	if token != "" {
+		query += fmt.Sprintf("?token=%v", token)
 	}
 
 	if r, err := c.DoApiPost(c.GetTeamsRoute()+"/members/invite"+query, ""); err != nil {
@@ -1455,6 +1459,69 @@ func (c *Client4) GetTeamInviteInfo(inviteId string) (*Team, *Response) {
 	}
 }
 
+// SetTeamIcon sets team icon of the team
+func (c *Client4) SetTeamIcon(teamId string, data []byte) (bool, *Response) {
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	if part, err := writer.CreateFormFile("image", "teamIcon.png"); err != nil {
+		return false, &Response{Error: NewAppError("SetTeamIcon", "model.client.set_team_icon.no_file.app_error", nil, err.Error(), http.StatusBadRequest)}
+	} else if _, err = io.Copy(part, bytes.NewBuffer(data)); err != nil {
+		return false, &Response{Error: NewAppError("SetTeamIcon", "model.client.set_team_icon.no_file.app_error", nil, err.Error(), http.StatusBadRequest)}
+	}
+
+	if err := writer.Close(); err != nil {
+		return false, &Response{Error: NewAppError("SetTeamIcon", "model.client.set_team_icon.writer.app_error", nil, err.Error(), http.StatusBadRequest)}
+	}
+
+	rq, _ := http.NewRequest("POST", c.ApiUrl+c.GetTeamRoute(teamId)+"/image", bytes.NewReader(body.Bytes()))
+	rq.Header.Set("Content-Type", writer.FormDataContentType())
+	rq.Close = true
+
+	if len(c.AuthToken) > 0 {
+		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
+	}
+
+	if rp, err := c.HttpClient.Do(rq); err != nil || rp == nil {
+		// set to http.StatusForbidden(403)
+		return false, &Response{StatusCode: http.StatusForbidden, Error: NewAppError(c.GetTeamRoute(teamId)+"/image", "model.client.connecting.app_error", nil, err.Error(), 403)}
+	} else {
+		defer closeBody(rp)
+
+		if rp.StatusCode >= 300 {
+			return false, BuildErrorResponse(rp, AppErrorFromJson(rp.Body))
+		} else {
+			return CheckStatusOK(rp), BuildResponse(rp)
+		}
+	}
+}
+
+// GetTeamIcon gets the team icon of the team
+func (c *Client4) GetTeamIcon(teamId, etag string) ([]byte, *Response) {
+	if r, err := c.DoApiGet(c.GetTeamRoute(teamId)+"/image", etag); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+
+		if data, err := ioutil.ReadAll(r.Body); err != nil {
+			return nil, BuildErrorResponse(r, NewAppError("GetTeamIcon", "model.client.get_team_icon.app_error", nil, err.Error(), r.StatusCode))
+		} else {
+			return data, BuildResponse(r)
+		}
+	}
+}
+
+// RemoveTeamIcon updates LastTeamIconUpdate to 0 which indicates team icon is removed.
+func (c *Client4) RemoveTeamIcon(teamId string) (bool, *Response) {
+	if r, err := c.DoApiDelete(c.GetTeamRoute(teamId) + "/image"); err != nil {
+		return false, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return CheckStatusOK(r), BuildResponse(r)
+	}
+}
+
 // Channel Section
 
 // CreateChannel creates a channel based on the provided channel struct.
@@ -1480,6 +1547,16 @@ func (c *Client4) UpdateChannel(channel *Channel) (*Channel, *Response) {
 // PatchChannel partially updates a channel. Any missing fields are not updated.
 func (c *Client4) PatchChannel(channelId string, patch *ChannelPatch) (*Channel, *Response) {
 	if r, err := c.DoApiPut(c.GetChannelRoute(channelId)+"/patch", patch.ToJson()); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return ChannelFromJson(r.Body), BuildResponse(r)
+	}
+}
+
+// ConvertChannelToPrivate converts public to private channel.
+func (c *Client4) ConvertChannelToPrivate(channelId string) (*Channel, *Response) {
+	if r, err := c.DoApiPost(c.GetChannelRoute(channelId)+"/convert", ""); err != nil {
 		return nil, BuildErrorResponse(r, err)
 	} else {
 		defer closeBody(r)
@@ -1764,6 +1841,16 @@ func (c *Client4) AutocompleteChannelsForTeam(teamId, name string) (*ChannelList
 // CreatePost creates a post based on the provided post struct.
 func (c *Client4) CreatePost(post *Post) (*Post, *Response) {
 	if r, err := c.DoApiPost(c.GetPostsRoute(), post.ToUnsanitizedJson()); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return PostFromJson(r.Body), BuildResponse(r)
+	}
+}
+
+// CreatePostEphemeral creates a ephemeral post based on the provided post struct which is send to the given user id
+func (c *Client4) CreatePostEphemeral(post *PostEphemeral) (*Post, *Response) {
+	if r, err := c.DoApiPost(c.GetPostsEphemeralRoute(), post.ToUnsanitizedJson()); err != nil {
 		return nil, BuildErrorResponse(r, err)
 	} else {
 		defer closeBody(r)
@@ -2167,6 +2254,18 @@ func (c *Client4) GetOldClientConfig(etag string) (map[string]string, *Response)
 	}
 }
 
+// GetEnvironmentConfig will retrieve a map mirroring the server configuration where fields
+// are set to true if the corresponding config setting is set through an environment variable.
+// Settings that haven't been set through environment variables will be missing from the map.
+func (c *Client4) GetEnvironmentConfig() (map[string]interface{}, *Response) {
+	if r, err := c.DoApiGet(c.GetConfigRoute()+"/environment", ""); err != nil {
+		return nil, BuildErrorResponse(r, err)
+	} else {
+		defer closeBody(r)
+		return StringInterfaceFromJson(r.Body), BuildResponse(r)
+	}
+}
+
 // GetOldClientLicense will retrieve the parts of the server license needed by the
 // client, formatted in the old format.
 func (c *Client4) GetOldClientLicense(etag string) (map[string]string, *Response) {
@@ -2260,7 +2359,7 @@ func (c *Client4) RemoveLicenseFile() (bool, *Response) {
 // and defaults to "standard". The "teamId" argument is optional and will limit results
 // to a specific team.
 func (c *Client4) GetAnalyticsOld(name, teamId string) (AnalyticsRows, *Response) {
-	query := fmt.Sprintf("?name=%v&teamId=%v", name, teamId)
+	query := fmt.Sprintf("?name=%v&team_id=%v", name, teamId)
 	if r, err := c.DoApiGet(c.GetAnalyticsRoute()+"/old"+query, ""); err != nil {
 		return nil, BuildErrorResponse(r, err)
 	} else {
@@ -2955,7 +3054,9 @@ func (c *Client4) ExecuteCommand(channelId, command string) (*CommandResponse, *
 		return nil, BuildErrorResponse(r, err)
 	} else {
 		defer closeBody(r)
-		return CommandResponseFromJson(r.Body), BuildResponse(r)
+
+		response, _ := CommandResponseFromJson(r.Body)
+		return response, BuildResponse(r)
 	}
 }
 
@@ -2971,7 +3072,9 @@ func (c *Client4) ExecuteCommandWithTeam(channelId, teamId, command string) (*Co
 		return nil, BuildErrorResponse(r, err)
 	} else {
 		defer closeBody(r)
-		return CommandResponseFromJson(r.Body), BuildResponse(r)
+
+		response, _ := CommandResponseFromJson(r.Body)
+		return response, BuildResponse(r)
 	}
 }
 
@@ -3400,58 +3503,5 @@ func (c *Client4) DeactivatePlugin(id string) (bool, *Response) {
 	} else {
 		defer closeBody(r)
 		return CheckStatusOK(r), BuildResponse(r)
-	}
-}
-
-// SetTeamIcon sets team icon of the team
-func (c *Client4) SetTeamIcon(teamId string, data []byte) (bool, *Response) {
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	if part, err := writer.CreateFormFile("image", "teamIcon.png"); err != nil {
-		return false, &Response{Error: NewAppError("SetTeamIcon", "model.client.set_team_icon.no_file.app_error", nil, err.Error(), http.StatusBadRequest)}
-	} else if _, err = io.Copy(part, bytes.NewBuffer(data)); err != nil {
-		return false, &Response{Error: NewAppError("SetTeamIcon", "model.client.set_team_icon.no_file.app_error", nil, err.Error(), http.StatusBadRequest)}
-	}
-
-	if err := writer.Close(); err != nil {
-		return false, &Response{Error: NewAppError("SetTeamIcon", "model.client.set_team_icon.writer.app_error", nil, err.Error(), http.StatusBadRequest)}
-	}
-
-	rq, _ := http.NewRequest("POST", c.ApiUrl+c.GetTeamRoute(teamId)+"/image", bytes.NewReader(body.Bytes()))
-	rq.Header.Set("Content-Type", writer.FormDataContentType())
-	rq.Close = true
-
-	if len(c.AuthToken) > 0 {
-		rq.Header.Set(HEADER_AUTH, c.AuthType+" "+c.AuthToken)
-	}
-
-	if rp, err := c.HttpClient.Do(rq); err != nil || rp == nil {
-		// set to http.StatusForbidden(403)
-		return false, &Response{StatusCode: http.StatusForbidden, Error: NewAppError(c.GetTeamRoute(teamId)+"/image", "model.client.connecting.app_error", nil, err.Error(), 403)}
-	} else {
-		defer closeBody(rp)
-
-		if rp.StatusCode >= 300 {
-			return false, BuildErrorResponse(rp, AppErrorFromJson(rp.Body))
-		} else {
-			return CheckStatusOK(rp), BuildResponse(rp)
-		}
-	}
-}
-
-// GetTeamIcon gets the team icon of the team
-func (c *Client4) GetTeamIcon(teamId, etag string) ([]byte, *Response) {
-	if r, err := c.DoApiGet(c.GetTeamRoute(teamId)+"/image", etag); err != nil {
-		return nil, BuildErrorResponse(r, err)
-	} else {
-		defer closeBody(r)
-
-		if data, err := ioutil.ReadAll(r.Body); err != nil {
-			return nil, BuildErrorResponse(r, NewAppError("GetTeamIcon", "model.client.get_team_icon.app_error", nil, err.Error(), r.StatusCode))
-		} else {
-			return data, BuildResponse(r)
-		}
 	}
 }

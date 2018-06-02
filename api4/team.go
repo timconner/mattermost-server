@@ -32,6 +32,7 @@ func (api *API) InitTeam() {
 
 	api.BaseRoutes.Team.Handle("/image", api.ApiSessionRequiredTrustRequester(getTeamIcon)).Methods("GET")
 	api.BaseRoutes.Team.Handle("/image", api.ApiSessionRequired(setTeamIcon)).Methods("POST")
+	api.BaseRoutes.Team.Handle("/image", api.ApiSessionRequired(removeTeamIcon)).Methods("DELETE")
 
 	api.BaseRoutes.TeamMembers.Handle("", api.ApiSessionRequired(getTeamMembers)).Methods("GET")
 	api.BaseRoutes.TeamMembers.Handle("/ids", api.ApiSessionRequired(getTeamMembersByIds)).Methods("POST")
@@ -376,15 +377,14 @@ func addTeamMember(c *Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func addUserToTeamFromInvite(c *Context, w http.ResponseWriter, r *http.Request) {
-	hash := r.URL.Query().Get("hash")
-	data := r.URL.Query().Get("data")
+	tokenId := r.URL.Query().Get("token")
 	inviteId := r.URL.Query().Get("invite_id")
 
 	var member *model.TeamMember
 	var err *model.AppError
 
-	if len(hash) > 0 && len(data) > 0 {
-		member, err = c.App.AddTeamMemberByHash(c.Session.UserId, hash, data)
+	if len(tokenId) > 0 {
+		member, err = c.App.AddTeamMemberByToken(c.Session.UserId, tokenId)
 	} else if len(inviteId) > 0 {
 		member, err = c.App.AddTeamMemberByInviteId(inviteId, c.Session.UserId)
 	} else {
@@ -806,6 +806,26 @@ func setTeamIcon(c *Context, w http.ResponseWriter, r *http.Request) {
 	imageData := imageArray[0]
 
 	if err := c.App.SetTeamIcon(c.Params.TeamId, imageData); err != nil {
+		c.Err = err
+		return
+	}
+
+	c.LogAudit("")
+	ReturnStatusOK(w)
+}
+
+func removeTeamIcon(c *Context, w http.ResponseWriter, r *http.Request) {
+	c.RequireTeamId()
+	if c.Err != nil {
+		return
+	}
+
+	if !c.App.SessionHasPermissionToTeam(c.Session, c.Params.TeamId, model.PERMISSION_MANAGE_TEAM) {
+		c.SetPermissionError(model.PERMISSION_MANAGE_TEAM)
+		return
+	}
+
+	if err := c.App.RemoveTeamIcon(c.Params.TeamId); err != nil {
 		c.Err = err
 		return
 	}
