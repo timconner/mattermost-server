@@ -159,6 +159,7 @@ func (a *App) CreatePost(post *model.Post, channel *model.Channel, triggerWebhoo
 
         if user.Props["is_bot"] == "true" {
             post.AddProp("from_webhook", "true");
+            post.AddProp("override_icon_url", a.GetSiteURL() + "/api/v4/users/" + user.Id + "/image");
         }
 
 	if err := a.FillInPostProps(post, channel); err != nil {
